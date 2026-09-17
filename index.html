@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment & Auto Approval Screen</title>
+    <title>Payment & Status Check</title>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f4f4f9; padding: 20px; margin: 0; }
         .container { max-width: 400px; margin: auto; background: #ffffff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
@@ -15,105 +15,95 @@
         input[type="text"], input[type="number"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
         button { width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; font-weight: bold; }
         button:hover { background-color: #218838; }
-        #response-msg { margin-top: 15px; text-align: center; font-weight: bold; font-size: 16px; }
-        #loading-box { display: none; text-align: center; margin-top: 20px; padding: 15px; background: #e2f0d9; border-radius: 8px; border: 1px solid #c3e6cb; }
+        #status-box { display: none; text-align: center; margin-top: 20px; padding: 20px; background: #e2f0d9; border-radius: 8px; border: 1px solid #c3e6cb; }
+        #msg { margin-top: 15px; text-align: center; font-weight: bold; font-size: 15px; }
     </style>
 </head>
 <body>
 
-<div class="container" id="payment-container">
+<div class="container" id="form-container">
     <h2>Scan & Pay ₹20</h2>
     
     <div class="qr-box">
-        <p>QR कोड स्कैन करके ₹20 पेमेंट करें:</p>
-        <!-- अपनी QR कोड की सही इमेज लिंक यहाँ लगा सकती हैं -->
-        <img src="https://i.postimg.cc/HxVFHJjX/upi-qr.png" alt="Payment QR Code">
+        <p>QR कोड स्कैन करके पेमेंट करें:</p>
+        <img src="https://i.postimg.cc/HxVFHJjX/upi-qr.png" alt="QR Code">
     </div>
 
-    <form onsubmit="event.preventDefault(); submitData();">
+    <form onsubmit="event.preventDefault(); sendPayment();">
         <div class="form-group">
-            <label for="name">Your Name:</label>
-            <input type="text" id="name" placeholder="अपना नाम लिखें" required>
+            <label>Your Name:</label>
+            <input type="text" id="p-name" placeholder="अपना नाम लिखें" required>
         </div>
 
         <div class="form-group">
-            <label for="utr">UTR / Transaction ID:</label>
-            <input type="text" id="utr" placeholder="UTR नंबर यहाँ डालें" required>
+            <label>UTR / Transaction ID:</label>
+            <input type="text" id="p-utr" placeholder="UTR नंबर यहाँ डालें" required>
         </div>
 
         <div class="form-group">
-            <label for="amount">Amount:</label>
-            <input type="number" id="amount" value="20" readonly required>
+            <label>Amount:</label>
+            <input type="number" id="p-amount" value="20" readonly required>
         </div>
 
         <button type="submit" id="submit-btn">Submit Payment</button>
     </form>
-
-    <p id="response-msg"></p>
+    <p id="msg"></p>
 </div>
 
-<!-- लोडिंग / इंतज़ार करने वाला बॉक्स जो सबमिट होने के बाद दिखेगा -->
-<div class="container" id="loading-box">
-    <h3>⏳ चेकिंग हो रहा है...</h3>
-    <p>आपका पेमेंट सबमिट हो गया है। एडमिन के अप्रूव करते ही ऐप अपने आप खुल जाएगा!</p>
+<div class="container" id="status-box">
+    <h3>⏳ चेकिंग चल रही है...</h3>
+    <p>आपका पेमेंट सबमिट हो गया है। एडमिन द्वारा अप्रूव होते ही ऐप अपने आप खुल जाएगा!</p>
 </div>
 
 <script>
 // अपना Google Apps Script Web App URL यहाँ ध्यान से जाँच लें
-var url = "https://script.google.com/macros/s/AKfycbyMxeUxdTtgJrq1L1Fb_XL7pYCQjr6UJ4ErF3BBWM76S-DIsNlpM5E0_oViL6yORrkcqA/exec";
-var checkInterval = null;
+var scriptURL = "https://script.google.com/macros/s/AKfycbyMxeUxdTtgJrq1L1Fb_XL7pYCQjr6UJ4ErF3BBWM76S-DIsNlpM5E0_oViL6yORrkcqA/exec";
+var intervalId = null;
 
-function submitData() {
-    var name = document.getElementById('name').value.trim();
-    var utr = document.getElementById('utr').value.trim();
-    var amount = document.getElementById('amount').value.trim();
-    var msg = document.getElementById('response-msg');
-
-    if (!name || !utr || !amount) {
-        msg.style.color = "red";
-        msg.innerText = "कृपया सभी जानकारी भरें!";
-        return;
-    }
+function sendPayment() {
+    var name = document.getElementById('p-name').value.trim();
+    var utr = document.getElementById('p-utr').value.trim();
+    var amount = document.getElementById('p-amount').value.trim();
+    var msg = document.getElementById('msg');
 
     msg.style.color = "blue";
-    msg.innerText = "सबमिट हो रहा है...";
+    msg.innerText = "डेटा भेजा जा रहा है...";
     document.getElementById('submit-btn').disabled = true;
 
-    var data = { name: name, utr: utr, amount: amount };
+    var formData = { name: name, utr: utr, amount: amount };
 
-    fetch(url, {
+    fetch(scriptURL, {
         method: "POST",
         mode: "no-cors",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams(data)
+        body: new URLSearchParams(formData)
     })
     .then(response => {
-        // फॉर्म छुपाकर इंतज़ार वाला संदेश दिखाएं
-        document.getElementById('payment-container').style.display = 'none';
-        document.getElementById('loading-box').style.display = 'block';
+        document.getElementById('form-container').style.display = 'none';
+        document.getElementById('status-box').style.display = 'block';
         
-        // ऑटोमैटिक स्टेटस चेक करना शुरू करें
-        startStatusChecking(utr);
+        // तुरंत स्टेटस चेक करना शुरू करें
+        startChecking(utr);
     })
     .catch(error => {
         msg.style.color = "red";
-        msg.innerText = "सबमिट करने में समस्या आई!";
+        msg.innerText = "एरर आ गया, दोबारा कोशिश करें!";
         document.getElementById('submit-btn').disabled = false;
     });
 }
 
-function startStatusChecking(utr) {
-    if (checkInterval) clearInterval(checkInterval);
+function startChecking(utr) {
+    if (intervalId) clearInterval(intervalId);
 
-    // हर 3 सेकंड में गूगल शीट से चेक करेगा कि अप्रूव हुआ या नहीं
-    checkInterval = setInterval(function() {
-        fetch(url + "?utr=" + encodeURIComponent(utr))
+    // हर 3 सेकंड में गूगल शीट से स्टेटस चेक करेगा
+    intervalId = setInterval(function() {
+        fetch(scriptURL + "?utr=" + encodeURIComponent(utr))
         .then(res => res.json())
         .then(data => {
             if (data.status && data.status.trim().toLowerCase() === "approved") {
-                clearInterval(checkInterval);
+                clearInterval(intervalId);
                 
-                // जैसे ही Approved मिले, Thunkable ऐप को "Approved" मैसेज भेज दें
+                // Thunkable ऐप को 'Approved' सिग्नल भेजें
                 try {
                     if (window.ThunkableWebviewerExtension) {
                         ThunkableWebviewerExtension.postMessage("Approved");
@@ -134,3 +124,4 @@ function startStatusChecking(utr) {
 
 </body>
 </html>
+
