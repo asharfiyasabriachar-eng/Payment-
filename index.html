@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment Screen</title>
+    <title>Payment & Auto Approval Screen</title>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f4f4f9; padding: 20px; margin: 0; }
         .container { max-width: 400px; margin: auto; background: #ffffff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
@@ -15,16 +15,18 @@
         input[type="text"], input[type="number"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
         button { width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; font-weight: bold; }
         button:hover { background-color: #218838; }
-        #response-msg { margin-top: 15px; text-align: center; font-weight: bold; }
+        #response-msg { margin-top: 15px; text-align: center; font-weight: bold; font-size: 16px; }
+        #loading-box { display: none; text-align: center; margin-top: 20px; padding: 15px; background: #e2f0d9; border-radius: 8px; border: 1px solid #c3e6cb; }
     </style>
 </head>
 <body>
 
-<div class="container">
+<div class="container" id="payment-container">
     <h2>Scan & Pay ₹20</h2>
     
     <div class="qr-box">
         <p>QR कोड स्कैन करके ₹20 पेमेंट करें:</p>
+        <!-- अपनी QR कोड की सही इमेज लिंक यहाँ लगा सकती हैं -->
         <img src="https://i.postimg.cc/HxVFHJjX/upi-qr.png" alt="Payment QR Code">
     </div>
 
@@ -50,8 +52,14 @@
     <p id="response-msg"></p>
 </div>
 
+<!-- लोडिंग / इंतज़ार करने वाला बॉक्स जो सबमिट होने के बाद दिखेगा -->
+<div class="container" id="loading-box">
+    <h3>⏳ चेकिंग हो रहा है...</h3>
+    <p>आपका पेमेंट सबमिट हो गया है। एडमिन के अप्रूव करते ही ऐप अपने आप खुल जाएगा!</p>
+</div>
+
 <script>
-// अपना सही Google Apps Script Web App URL यहाँ सुनिश्चित कर लें
+// अपना Google Apps Script Web App URL यहाँ ध्यान से जाँच लें
 var url = "https://script.google.com/macros/s/AKfycbyMxeUxdTtgJrq1L1Fb_XL7pYCQjr6UJ4ErF3BBWM76S-DIsNlpM5E0_oViL6yORrkcqA/exec";
 var checkInterval = null;
 
@@ -80,8 +88,11 @@ function submitData() {
         body: new URLSearchParams(data)
     })
     .then(response => {
-        msg.style.color = "orange";
-        msg.innerText = "पेमेंट सबमिट हो गया! एडमिन अप्रूवल का इंतज़ार है...";
+        // फॉर्म छुपाकर इंतज़ार वाला संदेश दिखाएं
+        document.getElementById('payment-container').style.display = 'none';
+        document.getElementById('loading-box').style.display = 'block';
+        
+        // ऑटोमैटिक स्टेटस चेक करना शुरू करें
         startStatusChecking(utr);
     })
     .catch(error => {
@@ -94,17 +105,15 @@ function submitData() {
 function startStatusChecking(utr) {
     if (checkInterval) clearInterval(checkInterval);
 
+    // हर 3 सेकंड में गूगल शीट से चेक करेगा कि अप्रूव हुआ या नहीं
     checkInterval = setInterval(function() {
         fetch(url + "?utr=" + encodeURIComponent(utr))
         .then(res => res.json())
         .then(data => {
-            // यहाँ चेक कर रहे हैं कि स्टेटस "Approved" हुआ या नहीं
             if (data.status && data.status.trim().toLowerCase() === "approved") {
                 clearInterval(checkInterval);
-                document.getElementById('response-msg').style.color = "green";
-                document.getElementById('response-msg').innerText = "पेमेंट अप्रूव हो गया है!";
-
-                // थंकेबल ऐप को मैसेज भेजने के दोनों सही तरीके यहाँ लिखे गए हैं
+                
+                // जैसे ही Approved मिले, Thunkable ऐप को "Approved" मैसेज भेज दें
                 try {
                     if (window.ThunkableWebviewerExtension) {
                         ThunkableWebviewerExtension.postMessage("Approved");
