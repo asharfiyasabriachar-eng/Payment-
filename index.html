@@ -1,156 +1,160 @@
+        
+
+                                                                                                                                                      
+                                                                                                                                                                                                                
 <!DOCTYPE html>
-<html>
-
-<html>
+<html lang="hi">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>JSFiddle uqcr7z9m</title>
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-          background-color: #f4f6f9;
-              padding: 15px;
-                  margin: 0;
-                  }
-                  .container {
-                      max-width: 400px;
-                          background: #ffffff;
-                              padding: 20px;
-                                  border-radius: 10px;
-                                      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-                                          margin: auto;
-                                              text-align: center;
-                                              }
-                                              h2 {
-                                                  color: #333;
-                                                      margin-bottom: 10px;
-                                                      }
-                                                      .qr-box img {
-                                                          width: 180px;
-                                                              height: 180px;
-                                                                  border: 2px solid #ddd;
-                                                                      border-radius: 8px;
-                                                                          padding: 5px;
-                                                                          }
-                                                                          .form-group {
-                                                                              margin-bottom: 15px;
-                                                                                  text-align: left;
-                                                                                  }
-                                                                                  label {
-                                                                                      display: block;
-                                                                                          margin-bottom: 5px;
-                                                                                              color: #555;
-                                                                                                  font-weight: bold;
-                                                                                                  }
-                                                                                                  input {
-                                                                                                      width: 100%;
-                                                                                                          padding: 10px;
-                                                                                                              border: 1px solid #ccc;
-                                                                                                                  border-radius: 5px;
-                                                                                                                      box-sizing: border-box;
-                                                                                                                          font-size: 16px;
-                                                                                                                          }
-                                                                                                                          button {
-                                                                                                                              width: 100%;
-                                                                                                                                  padding: 12px;
-                                                                                                                                      background-color: #28a745;
-                                                                                                                                          color: white;
-                                                                                                                                              border: none;
-                                                                                                                                                  border-radius: 5px;
-                                                                                                                                                      font-size: 16px;
-                                                                                                                                                          cursor: pointer;
-                                                                                                                                                              font-weight: bold;
-                                                                                                                                                              }
-                                                                                                                                                              button:hover {
-                                                                                                                                                                  background-color: #218838;
-                                                                                                                                                                  }
-                                                                                                                                                                  #response-msg {
-                                                                                                                                                                      margin-top: 15px;
-                                                                                                                                                                          font-weight: bold;
-                                                                                                                                                                          }
-                                                                                                                                                                          
-}
-  </style>
-
-  
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Screen</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 400px;
+            margin: auto;
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        .qr-box {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .qr-box img {
+            width: 200px;
+            height: 200px;
+            border-radius: 8px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        #response-msg {
+            margin-top: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-      <h2>Scan & Pay ₹20</h2>
-          
-              <div class="qr-box">
-                      <p>QR कोड को स्कैन करके ₹20 पेमेंट करें:</p>
-                              <img src="https://i.ibb.co/FTbt18K/qr.jpg" alt="Payment QR Code" id="qr-img">
-                                  </div>
 
-                                      <form onsubmit="event.preventDefault(); submitData();">
-                                              <div class="form-group">
-                                                          <label for="name">Your Name:</label>
-                                                                      <input type="text" id="name" placeholder="अपना नाम लिखें" required>
-                                                                              </div>
-                                                                                      <div class="form-group">
-                                                                                                  <label for="utr">UTR / Transaction ID:</label>
-                                                                                                              <input type="text" id="utr" placeholder="UTR नंबर यहाँ डालें" required>
-                                                                                                                      </div>
-                                                                                                                              <div class="form-group">
-                                                                                                                                          <label for="amount">Amount:</label>
-                                                                                                                                                      <input type="number" id="amount" value="20" readonly required>
-                                                                                                                                                              </div>
-                                                                                                                                                                      
-                                                                                                                                                                              <button type="submit">Submit Payment</button>
-                                                                                                                                                                                  </form>
-                                                                                                                                                                                      
-                                                                                                                                                                                          <p id="response-msg"></p>
-                                                                                                                                                                                          </div>
-                                                                                                                                                                                          
+<div class="container">
+    <h2>Scan & Pay ₹20</h2>
+    
+    <div class="qr-box">
+        <p>QR कोड स्कैन करके ₹20 पेमेंट करें:</p>
+        <img src="https://i.ibb.co/FTbt1BK/qr.jpg" alt="Payment QR Code" id="qr-img">
+    </div>
 
-  <script>
-    function submitData() {
-      var name = document.getElementById('name').value.trim();
-          var utr = document.getElementById('utr').value.trim();
-              var amount = document.getElementById('amount').value.trim();
-                  var msg = document.getElementById('response-msg');
+    <form onsubmit="event.preventDefault(); submitData();">
+        <div class="form-group">
+            <label for="name">Your Name:</label>
+            <input type="text" id="name" placeholder="अपना नाम लिखें" required>
+        </div>
 
-                      if(!name || !utr || !amount) {
-                              msg.style.color = "red";
-                                      msg.innerText = "कृपया सभी जानकारी भरें!";
-                                              return;
-                                                  }
+        <div class="form-group">
+            <label for="utr">UTR / Transaction ID:</label>
+            <input type="text" id="utr" placeholder="UTR नंबर यहाँ डालें" required>
+        </div>
 
-                                                      msg.style.color = "blue";
-                                                          msg.innerText = "Submitting...";
+        <div class="form-group">
+            <label for="amount">Amount:</label>
+            <input type="number" id="amount" value="20" readonly required>
+        </div>
 
-                                                              var url = "https://script.google.com/macros/s/AKfycbxRuv4xFfinbQK3qXIcjyzt5EVxwYGt9qGBDf5IdHQK8puSoPOlhOjGtZ7q1-CvN8o35Q/exec";
+        <button type="submit">Submit Payment</button>
+    </form>
 
-                                                                  var data = {
-                                                                          name: name,
-                                                                                  utr: utr,
-                                                                                          amount: amount
-                                                                                              };
+    <p id="response-msg"></p>
+</div>
 
-                                                                                                  fetch(url, {
-                                                                                                          method: "POST",
-                                                                                                                  mode: "no-cors",
-                                                                                                                          headers: {
-                                                                                                                                      "Content-Type": "application/json"
-                                                                                                                                              },
-                                                                                                                                                      body: JSON.stringify(data)
-                                                                                                                                                          })
-                                                                                                                                                              .then(response => {
-                                                                                                                                                                      msg.style.color = "green";
-                                                                                                                                                                              msg.innerText = "सफलतापूर्वक सबमिट हो गया! एडमिन के अप्रूवल का इंतज़ार करें।";
-                                                                                                                                                                                      document.getElementById('name').value = '';
-                                                                                                                                                                                              document.getElementById('utr').value = '';
-                                                                                                                                                                                                  })
-                                                                                                                                                                                                      .catch(error => {
-                                                                                                                                                                                                              msg.style.color = "red";
-                                                                                                                                                                                                                      msg.innerText = "सबमिट करने में एरर आया!";
-                                                                                                                                                                                                                          });
-                                                                                                                                                                                                                          }
-                                                                                                                                                                                                                          
+<script>
+function submitData() {
+    var name = document.getElementById('name').value.trim();
+    var utr = document.getElementById('utr').value.trim();
+    var amount = document.getElementById('amount').value.trim();
+    var msg = document.getElementById('response-msg');
+
+    if (!name || !utr || !amount) {
+        msg.style.color = "red";
+        msg.innerText = "कृपया सभी जानकारी भरें!";
+        return;
+    }
+
+    msg.style.color = "blue";
+    msg.innerText = "Submitting...";
+
+    var url = "https://script.google.com/macros/s/AKfycbxRuu4xFfInbQK3qXIcjyzt5EvXvVGs9qGBDY5IdHQK8puSo70InOjGLZ7q1-CvN8o3SQ/exec";
+
+    var data = {
+        name: name,
+        utr: utr,
+        amount: amount
+    };
+
+    fetch(url, {
+        method: "POST",
+        mode: "no-cors",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams(data)
+    })
+    .then(response => {
+        // Thunkable ऐप को UTR नंबर भेजें
+        if (window.ThunkableWebviewerExtension) {
+            ThunkableWebviewerExtension.postMessage(utr);
+        }
+        msg.style.color = "green";
+        msg.innerText = "सफलतापूर्वक सबमिट हो गया! एडमिन के अप्रूवल का इंतजार करें।";
+        document.getElementById('name').value = '';
+        document.getElementById('utr').value = '';
+    })
+    .catch(error => {
+        msg.style.color = "red";
+        msg.innerText = "सबमिट करने में भूल हो गई!";
+    });
 }
-  </script>
+</script>
+
 </body>
 </html>
+
+  
