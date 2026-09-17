@@ -117,8 +117,8 @@ function submitData() {
     msg.style.color = "blue";
     msg.innerText = "Submitting...";
 
-    // नया Apps Script Web App URL
-    var url = "https://script.google.com/macros/s/AKfycbwwlStHR1WX5kXFo-dnubtUHPHj06UxjooauzdW1Nz1OIuFBlTNGaZ2djkcKE7k69v_cA/exec";
+    // आपका नया डिप्लॉयड Web App URL
+    var url = "https://script.google.com/macros/s/AKfycbyMxeUxdTtgJrq1L1Fb_XL7pYCQjr6UJ4ErF3BBWM76S-DIsNlpM5E0_oViL6yORrkcqA/exec";
 
     var data = {
         name: name,
@@ -135,7 +135,6 @@ function submitData() {
         body: new URLSearchParams(data)
     })
     .then(response => {
-        // Thunkable ऐप को UTR मैसेज भेजें
         if (window.ThunkableWebviewerExtension) {
             ThunkableWebviewerExtension.postMessage(utr);
         }
