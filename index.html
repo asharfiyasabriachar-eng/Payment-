@@ -1,7 +1,3 @@
-        
-
-                                                                                                                                                      
-                                                                                                                                                                                                                
 <!DOCTYPE html>
 <html lang="hi">
 <head>
@@ -138,7 +134,7 @@ function submitData() {
         body: new URLSearchParams(data)
     })
     .then(response => {
-        // Thunkable ऐप को UTR नंबर भेजें
+        // Thunkable ऐप को UTR मैसेज भेजें
         if (window.ThunkableWebviewerExtension) {
             ThunkableWebviewerExtension.postMessage(utr);
         }
@@ -156,5 +152,3 @@ function submitData() {
 
 </body>
 </html>
-
-  
