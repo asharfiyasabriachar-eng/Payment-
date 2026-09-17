@@ -5,68 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Payment Screen</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
-            padding: 20px;
-            margin: 0;
-        }
-        .container {
-            max-width: 400px;
-            margin: auto;
-            background: #ffffff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        h2 {
-            text-align: center;
-            color: #333;
-        }
-        .qr-box {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .qr-box img {
-            width: 200px;
-            height: 200px;
-            border-radius: 8px;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #555;
-        }
-        input[type="text"], input[type="number"] {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-sizing: border-box;
-        }
-        button {
-            width: 100%;
-            padding: 12px;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        button:hover {
-            background-color: #218838;
-        }
-        #response-msg {
-            margin-top: 15px;
-            text-align: center;
-            font-weight: bold;
-        }
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; padding: 20px; margin: 0; }
+        .container { max-width: 400px; margin: auto; background: #ffffff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #333; }
+        .qr-box { text-align: center; margin-bottom: 20px; }
+        .qr-box img { width: 200px; height: 200px; border-radius: 8px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
+        input[type="text"], input[type="number"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; font-weight: bold; }
+        button:hover { background-color: #218838; }
+        #response-msg { margin-top: 15px; text-align: center; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -76,7 +25,7 @@
     
     <div class="qr-box">
         <p>QR कोड स्कैन करके ₹20 पेमेंट करें:</p>
-        <img src="https://i.postimg.cc/HxVFHJjX/upi-qr.png" alt="Payment QR Code" id="qr-img">
+        <img src="https://i.postimg.cc/HxVFHJjX/upi-qr.png" alt="Payment QR Code">
     </div>
 
     <form onsubmit="event.preventDefault(); submitData();">
@@ -95,13 +44,16 @@
             <input type="number" id="amount" value="20" readonly required>
         </div>
 
-        <button type="submit">Submit Payment</button>
+        <button type="submit" id="submit-btn">Submit Payment</button>
     </form>
 
     <p id="response-msg"></p>
 </div>
 
 <script>
+var url = "https://script.google.com/macros/s/AKfycbyMxeUxdTtgJrq1L1Fb_XL7pYCQjr6UJ4ErF3BBWM76S-DIsNlpM5E0_oViL6yORrkcqA/exec";
+var checkInterval = null;
+
 function submitData() {
     var name = document.getElementById('name').value.trim();
     var utr = document.getElementById('utr').value.trim();
@@ -115,38 +67,53 @@ function submitData() {
     }
 
     msg.style.color = "blue";
-    msg.innerText = "Submitting...";
+    msg.innerText = "सबमिट हो रहा है...";
+    document.getElementById('submit-btn').disabled = true;
 
-    // आपका नया डिप्लॉयड Web App URL
-    var url = "https://script.google.com/macros/s/AKfycbyMxeUxdTtgJrq1L1Fb_XL7pYCQjr6UJ4ErF3BBWM76S-DIsNlpM5E0_oViL6yORrkcqA/exec";
-
-    var data = {
-        name: name,
-        utr: utr,
-        amount: amount
-    };
+    var data = { name: name, utr: utr, amount: amount };
 
     fetch(url, {
         method: "POST",
         mode: "no-cors",
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-        },
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams(data)
     })
     .then(response => {
-        if (window.ThunkableWebviewerExtension) {
-            ThunkableWebviewerExtension.postMessage(utr);
-        }
-        msg.style.color = "green";
-        msg.innerText = "सफलतापूर्वक सबमिट हो गया! एडमिन के अप्रूवल का इंतजार करें।";
-        document.getElementById('name').value = '';
-        document.getElementById('utr').value = '';
+        msg.style.color = "orange";
+        msg.innerText = "पेमेंट सबमिट हो गया! एडमिन अप्रूवल का इंतज़ार है...";
+        // तुरंत स्टेटस चेक करना शुरू करें
+        startStatusChecking(utr);
     })
     .catch(error => {
         msg.style.color = "red";
-        msg.innerText = "सबमिट करने में भूल हो गई!";
+        msg.innerText = "सबमिट करने में समस्या आई!";
+        document.getElementById('submit-btn').disabled = false;
     });
+}
+
+function startStatusChecking(utr) {
+    if (checkInterval) clearInterval(checkInterval);
+
+    // हर 3 सेकंड में Google Sheet से स्टेटस पूछेगा
+    checkInterval = setInterval(function() {
+        fetch(url + "?utr=" + encodeURIComponent(utr))
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === "Approved") {
+                clearInterval(checkInterval);
+                document.getElementById('response-msg').style.color = "green";
+                document.getElementById('response-msg').innerText = "पेमेंट अप्रूव हो गया है!";
+
+                // Thunkable ऐप को सुरक्षित रूप से मैसेज भेजें
+                if (window.ReactNativeWebView) {
+                    window.ReactNativeWebView.postMessage("Approved");
+                } else if (window.ThunkableWebviewerExtension) {
+                    ThunkableWebviewerExtension.postMessage("Approved");
+                }
+            }
+        })
+        .catch(err => console.log(err));
+    }, 3000);
 }
 </script>
 
