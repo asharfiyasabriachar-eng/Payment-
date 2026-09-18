@@ -3,128 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment & Status Check</title>
+    <title>Payment & Game Lock</title>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f4f9; padding: 20px; margin: 0; }
-        .container { max-width: 400px; margin: auto; background: #ffffff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        h2 { text-align: center; color: #333; }
-        .qr-box { text-align: center; margin-bottom: 20px; }
-        .qr-box img { width: 200px; height: 200px; border-radius: 8px; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
-        input[type="text"], input[type="number"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; font-weight: bold; }
-        button:hover { background-color: #218838; }
-        #status-box { display: none; text-align: center; margin-top: 20px; padding: 20px; background: #e2f0d9; border-radius: 8px; border: 1px solid #c3e6cb; }
-        #msg { margin-top: 15px; text-align: center; font-weight: bold; font-size: 15px; }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            text-align: center;
+            padding: 50px;
+            color: #333;
+        }
+        .container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            display: inline-block;
+        }
+        h3 { color: #007BFF; }
     </style>
 </head>
 <body>
 
-<div class="container" id="form-container">
-    <h2>Scan & Pay ₹20</h2>
-    
-    <div class="qr-box">
-        <p>QR कोड स्कैन करके पेमेंट करें:</p>
-        <img src="https://i.postimg.cc/HxVFHJjX/upi-qr.png" alt="QR Code">
+    <div class="container">
+        <h3 id="statusText">स्टेटس चेक किया जा रहा है...</h3>
+        <p id="timerText"></p>
     </div>
 
-    <form onsubmit="event.preventDefault(); submitPaymentData();">
-        <div class="form-group">
-            <label>Your Name:</label>
-            <input type="text" id="name" placeholder="अपना नाम लिखें" required>
-        </div>
+    <script>
+        // यहाँ आपका दिया गया Google Apps Script Web App URL है
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby49-NodUjFEF8CeJpJPGbNXYvBBqqLgfXb_Tqp99fOsnxiWtsP8xT1WaukEscKQ5TODg/exec";
+        
+        // यूजर का नाम (इसे थंकेबल से पास किया जा सकता है या लोकल स्टोरेज से लिया जा सकता है)
+        // अभी के लिए इसे डायनामिक या टेस्ट नेम पर सेट कर सकते हैं
+        const userName = localStorage.getItem("userName") || "User1"; 
 
-        <div class="form-group">
-            <label>UTR / Transaction ID:</label>
-            <input type="text" id="utr" placeholder="UTR नंबर यहाँ डालें" required>
-        </div>
+        function checkStatus() {
+            fetch(`${WEB_APP_URL}?name=${encodeURIComponent(userName)}`)
+                .then(response => response.json())
+                .then(data => {
+                    let status = data.status;
+                    let timestampStr = data.timestamp;
 
-        <div class="form-group">
-            <label>Amount:</label>
-            <input type="number" id="amount" value="20" readonly required>
-        </div>
+                    document.getElementById("statusText").innerText = "Status: " + status;
 
-        <button type="submit" id="submit-btn">Submit Payment</button>
-    </form>
-    <p id="msg"></p>
-</div>
+                    if (status.toLowerCase() === "approved") {
+                        if (timestampStr) {
+                            let approvalTime = new Date(timestampStr).getTime();
+                            let currentTime = new Date().getTime();
+                            let hoursElapsed = (currentTime - approvalTime) / (1000 * 60 * 60);
 
-<div class="container" id="status-box">
-    <h3>⏳ एडमिन अप्रूवल का इंतज़ार है...</h3>
-    <p>आपका पेमेंट सबमिट हो गया है। जैसे ही शीट में अप्रूव होगा, ऐप अपने आप खुल जाएगा!</p>
-</div>
-
-<script>
-// आपका नया और सही Apps Script यूआरएल यहाँ सेट कर दिया गया है
-var scriptURL = "https://script.google.com/macros/s/AKfycbwClQfVBODRbhkeVvqbXrDM1___8vneZTBL0s40PZQ_oUp7OpnGVyJ1uZ2jsydbuRTPpg/exec";
-var checkTimer = null;
-
-function submitPaymentData() {
-    var name = document.getElementById('name').value.trim();
-    var utr = document.getElementById('utr').value.trim();
-    var amount = document.getElementById('amount').value.trim();
-    var msg = document.getElementById('msg');
-
-    msg.style.color = "blue";
-    msg.innerText = "डेटा सबमिट हो रहा है...";
-    document.getElementById('submit-btn').disabled = true;
-
-    var fullURL = scriptURL + "?name=" + encodeURIComponent(name) + "&utr=" + encodeURIComponent(utr) + "&amount=" + encodeURIComponent(amount);
-
-    fetch(fullURL, {
-        method: "POST"
-    })
-    .then(response => response.text())
-    .then(result => {
-        document.getElementById('form-container').style.display = 'none';
-        document.getElementById('status-box').style.display = 'block';
-        startCheckingStatus(utr);
-    })
-    .catch(error => {
-        document.getElementById('form-container').style.display = 'none';
-        document.getElementById('status-box').style.display = 'block';
-        startCheckingStatus(utr);
-    });
-}
-
-function startCheckingStatus(utr) {
-    if (checkTimer) clearInterval(checkTimer);
-
-    // हर 3 सेकंड में गूगल शीट से स्टेटस चेक करेगा
-    checkTimer = setInterval(function() {
-        fetch(scriptURL + "?utr=" + encodeURIComponent(utr))
-        .then(res => res.json())
-        .then(data => {
-            console.log("Current Status from Sheet: ", data.status);
-            
-            if (data.status) {
-                var cleanStatus = data.status.toString().trim().toLowerCase();
-                
-                if (cleanStatus === "approved") {
-                    clearInterval(checkTimer);
-                    
-                    // Thunkable ऐप को "Approved" का सिग्नल भेजने के सभी तरीके
-                    try {
-                        if (window.ThunkableWebviewerExtension) {
-                            ThunkableWebviewerExtension.postMessage("Approved");
+                            if (hoursElapsed < 24) {
+                                document.getElementById("timerText").innerText = "24 घंटे का लॉक सक्रिय है। गेम पर रीडायरेक्ट हो रहा है...";
+                                
+                                // थंकेबल को स्क्रीन बदलने का सिग्नल भेजना (window.ReactNativeWebView या PostMessage के जरिए)
+                                sendDataToThunkable("GOTO_GAME_SCREEN");
+                            } else {
+                                document.getElementById("timerText").innerText = "24 घंटे पूरे हो चुके हैं। कृपया पुनः भुगतान करें।";
+                                sendDataToThunkable("GOTO_PAYMENT_SCREEN");
+                            }
+                        } else {
+                            // अगर टाइमस्टैम्प नहीं है लेकिन अप्रूव्ड है
+                            sendDataToThunkable("GOTO_GAME_SCREEN");
                         }
-                        if (window.ReactNativeWebView) {
-                            window.ReactNativeWebView.postMessage("Approved");
-                        }
-                        window.parent.postMessage("Approved", "*");
-                    } catch(e) {
-                        console.log("PostMessage error: ", e);
+                    } else {
+                        document.getElementById("timerText").innerText = "कृपया एडमिन की स्वीकृति (Approval) की प्रतीक्षा करें...";
                     }
-                }
+                })
+                .catch(error => {
+                    console.error("Error fetching data:", error);
+                    document.getElementById("statusText").innerText = "कनेक्शन त्रुटि। पुनः प्रयास कर रहा है...";
+                });
+        }
+
+        function sendDataToThunkable(action) {
+            if (window.ReactNativeWebView) {
+                window.ReactNativeWebView.postMessage(action);
             }
-        })
-        .catch(err => {
-            console.log("Checking error: ", err);
-        });
-    }, 3000);
-}
-</script>
+        }
+
+        // हर 5 सेकंड में स्टेटस चेक करते रहें
+        setInterval(checkStatus, 5000);
+        checkStatus(); // पहली बार तुरंत रन हो
+    </script>
 
 </body>
 </html>
