@@ -110,14 +110,14 @@
 
     <!-- छिपा हुआ फ्रेम ताकि बिना रुकावट शीट में डेटा जाए -->
     <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
-    <form id="hiddenForm" action="https://script.google.com/macros/s/AKfycbyhbKmSDtVuxLhsfagcGap6WwRw2zoNUSj8ni9bB4JdHJeNZV0KG-R95bQEPahcl5N3-A/exec" method="GET" target="hidden_iframe" style="display:none;">
+    <form id="hiddenForm" action="https://script.google.com/macros/s/AKfycbyXFpslYQ6Eu-AwkuHcVvLY3324W__RfsdCTU1eE5lAT2XG8HWDSXJ51qCK6xZZmtjxag/exec" method="GET" target="hidden_iframe" style="display:none;">
         <input type="hidden" name="name" id="formName">
         <input type="hidden" name="utr" id="formUtr">
     </form>
 
     <script>
         // आपका नया और अपडेटेड Google Apps Script Web App URL
-        const WEB_URL = "https://script.google.com/macros/s/AKfycbyhbKmSDtVuxLhsfagcGap6WwRw2zoNUSj8ni9bB4JdHJeNZV0KG-R95bQEPahcl5N3-A/exec";
+        const WEB_URL = "https://script.google.com/macros/s/AKfycbyXFpslYQ6Eu-AwkuHcVvLY3324W__RfsdCTU1eE5lAT2XG8HWDSXJ51qCK6xZZmtjxag/exec";
 
         window.onload = function() {
             if(localStorage.getItem("userName")) {
@@ -181,14 +181,14 @@
 
                             if (hoursPassed < 24) {
                                 document.getElementById("timerMsg").innerText = "24 घंटे का लॉक सक्रिय है। गेम पर जा रहे हैं...";
-                                sendToThunkable("GOTO_GAME");
+                                sendToApp("GOTO_GAME");
                             } else {
                                 document.getElementById("timerMsg").innerText = "24 घंटे पूरे हो चुके हैं। पुनः भुगतान करें।";
-                                sendToThunkable("GOTO_PAYMENT");
+                                sendToApp("GOTO_PAYMENT");
                             }
                         } else {
                             document.getElementById("timerMsg").innerText = "अप्रूव हो गया है!";
-                            sendToThunkable("GOTO_GAME");
+                            sendToApp("GOTO_GAME");
                         }
                     } else {
                         document.getElementById("timerMsg").innerText = "Pending: एडमिन अप्रूवल का इंतज़ार है...";
@@ -199,9 +199,12 @@
                 });
         }
 
-        function sendToThunkable(action) {
+        function sendToApp(action) {
+            // यह Thunkable या WebView ऐप को मैसेज भेजने के लिए है
             if (window.ReactNativeWebView) {
                 window.ReactNativeWebView.postMessage(action);
+            } else if (window.parent) {
+                window.parent.postMessage(action, "*");
             }
         }
     </script>
