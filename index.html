@@ -78,11 +78,18 @@
             border-radius: 4px;
             font-size: 12px;
         }
+
+        #countdown {
+            font-size: 14px;
+            font-weight: bold;
+            color: #28a745;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
 
-    <div class="box">
+    <div class="box" id="mainBox">
         <h3>पेमेंट और अप्रूवल</h3>
         
         <div class="qr-container">
@@ -90,7 +97,7 @@
             <img src="https://i.ibb.co/20nfkZzS/qr-image.jpg" alt="QR Code">
         </div>
 
-        <div class="input-group">
+        <div class="input-group" id="formGroup">
             <div id="screenAlert">कृपया अपना नाम और UTR नंबर दोनों दर्ज करें!</div>
 
             <label>आपका नाम (Name):</label>
@@ -105,10 +112,11 @@
         <div id="statusBox">
             <p id="statusMsg"><b>Status:</b> डिटेल्स भरें</p>
             <p id="timerMsg">प्रतीक्षा की जा रही है...</p>
+            <div id="countdown"></div>
         </div>
     </div>
 
-    <!-- छिपा हुआ फ्रेम ताकि बिना रुकावट शीट में डेटा जाए -->
+    <!-- छिपा हुआ iframe ताकि बैकग्राउंड में शीट तक डेटा पहुँच जाए -->
     <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
     <form id="hiddenForm" action="https://script.google.com/macros/s/AKfycbyXFpslYQ6Eu-AwkuHcVvLY3324W__RfsdCTU1eE5lAT2XG8HWDSXJ51qCK6xZZmtjxag/exec" method="GET" target="hidden_iframe" style="display:none;">
         <input type="hidden" name="name" id="formName">
@@ -116,18 +124,15 @@
     </form>
 
     <script>
-        // आपका नया और अपडेटेड Google Apps Script Web App URL
         const WEB_URL = "https://script.google.com/macros/s/AKfycbyXFpslYQ6Eu-AwkuHcVvLY3324W__RfsdCTU1eE5lAT2XG8HWDSXJ51qCK6xZZmtjxag/exec";
+        let checkInterval = null;
+        let countdownInterval = null;
 
+        // रिफ्रेश होने पर बॉक्स साफ़ रहेगा
         window.onload = function() {
-            if(localStorage.getItem("userName")) {
-                document.getElementById("userNameInput").value = localStorage.getItem("userName");
-                if(localStorage.getItem("utrNumber")) {
-                    document.getElementById("utrInput").value = localStorage.getItem("utrNumber");
-                }
-                checkStatus();
-                setInterval(checkStatus, 4000);
-            }
+            document.getElementById("userNameInput").value = "";
+            document.getElementById("utrInput").value = "";
+            sessionStorage.removeItem("activeUser");
         }
 
         function submitDetails() {
@@ -142,65 +147,87 @@
                 alertBox.style.display = "none";
             }
 
-            localStorage.setItem("userName", name);
-            localStorage.setItem("utrNumber", utr);
+            sessionStorage.setItem("activeUser", name);
             
             document.getElementById("statusMsg").innerHTML = "<b>Status:</b> शीट पर भेजा जा रहा है...";
 
-            // फॉर्म के जरिए चुपचाप गूगल शीट में डेटा भेजना
             document.getElementById("formName").value = name;
             document.getElementById("formUtr").value = utr;
             document.getElementById("hiddenForm").submit();
 
             setTimeout(function() {
                 document.getElementById("statusMsg").innerHTML = "<b>Status:</b> Pending (अप्रूवल का इंतज़ार है)";
+                if(checkInterval) clearInterval(checkInterval);
                 checkStatus();
-                setInterval(checkStatus, 4000);
+                checkInterval = setInterval(checkStatus, 4000);
             }, 1500);
         }
 
         function checkStatus() {
-            let name = localStorage.getItem("userName");
+            let name = sessionStorage.getItem("activeUser");
             if(!name) return;
 
             let url = `${WEB_URL}?name=${encodeURIComponent(name)}`;
 
             fetch(url)
-                .then(res => res.json())
-                .then(data => {
-                    let status = data.status;
-                    let timestamp = data.timestamp;
+                .then(res => res.text())
+                .then(text => {
+                    let data;
+                    try {
+                        data = JSON.parse(text);
+                    } catch (e) {
+                        data = { status: text.trim(), timestamp: "" };
+                    }
+
+                    let status = data.status ? data.status.trim() : "Pending";
+                    let timestamp = data.timestamp ? data.timestamp.trim() : "";
 
                     document.getElementById("statusMsg").innerHTML = "<b>Status:</b> " + status;
 
                     if (status.toLowerCase() === "approved") {
-                        if (timestamp) {
-                            let approvalTime = new Date(timestamp).getTime();
-                            let currentTime = new Date().getTime();
-                            let hoursPassed = (currentTime - approvalTime) / (1000 * 60 * 60);
+                        clearInterval(checkInterval); // स्टेटस चेक करना बंद करें क्योंकि अप्रूव हो गया है
+                        document.getElementById("formGroup.style").display = "none"; // फॉर्म छुपाएं
 
-                            if (hoursPassed < 24) {
-                                document.getElementById("timerMsg").innerText = "24 घंटे का लॉक सक्रिय है। गेम पर जा रहे हैं...";
-                                sendToApp("GOTO_GAME");
-                            } else {
-                                document.getElementById("timerMsg").innerText = "24 घंटे पूरे हो चुके हैं। पुनः भुगतान करें।";
-                                sendToApp("GOTO_PAYMENT");
-                            }
-                        } else {
-                            document.getElementById("timerMsg").innerText = "अप्रूव हो गया है!";
-                            sendToApp("GOTO_GAME");
-                        }
+                        // टाइमर शुरू करें (24 घंटे)
+                        let approvalTime = timestamp ? new Date(timestamp).getTime() : new Date().getTime();
+                        startTimer(approvalTime + (24 * 60 * 60 * 1000));
+
+                        // स्क्रीन बदलने का मैसेज भेजें
+                        document.getElementById("timerMsg").innerText = "सफलतापूर्वक अप्रूव हो गया!";
+                        sendToApp("GOTO_GAME");
                     } else {
                         document.getElementById("timerMsg").innerText = "Pending: एडमिन अप्रूवल का इंतज़ार है...";
                     }
                 })
                 .catch(err => {
-                    console.log("Checking status...");
+                    console.log("Checking status error...");
                 });
         }
 
+        // 24 घंटे का लाइव काउंटडाउन टाइमर फंक्शन
+        function startTimer(expiryTime) {
+            if(countdownInterval) clearInterval(countdownInterval);
+
+            countdownInterval = setInterval(function() {
+                let now = new Date().getTime();
+                let distance = expiryTime - now;
+
+                if (distance < 0) {
+                    clearInterval(countdownInterval);
+                    document.getElementById("countdown").innerText = "24 घंटे समाप्त हो चुके हैं!";
+                    sendToApp("GOTO_PAYMENT");
+                    return;
+                }
+
+                let hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                let minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                let seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                document.getElementById("countdown").innerText = `समय शेष: ${hours}h ${minutes}m ${seconds}s`;
+            }, 1000);
+        }
+
         function sendToApp(action) {
-            // यह Thunkable या WebView ऐप को मैसेज भेजने के लिए है
             if (window.ReactNativeWebView) {
                 window.ReactNativeWebView.postMessage(action);
             } else if (window.parent) {
