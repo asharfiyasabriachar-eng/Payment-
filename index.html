@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>कॉइन टॉस और अप्रूवल सिस्टम</title>
+    <title>कॉइन टॉस और बैकग्राउंड टाइमर सिस्टम</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -60,7 +60,6 @@
             margin-top: 15px;
         }
         
-        /* कॉइन टॉस स्क्रीन का डिज़ाइन */
         .coin-toss-screen {
             background: #f8f9fa;
             border: 2px dashed #007bff;
@@ -132,25 +131,23 @@
         <h2>समीक्षाधीन (Under Review)</h2>
         <div class="status-box">
             <p><strong>Pending</strong></p>
-            <p>एडमिन अप्रूवल का इंतज़ार है। जैसे ही अप्रूव होगा, सीधे कॉइन टॉस स्क्रीन खुल जाएगी।</p>
+            <p>एडमिन अप्रूवल का इंतज़ार है। जैसे ही अप्रूव होगा, स्क्रीन स्वतः बदल जाएगी।</p>
         </div>
         <div id="statusError" class="error-msg"></div>
         <button onclick="checkStatusManually()" style="background-color: #17a2b8; margin-top: 20px;">स्टेटस दोबारा चेक करें</button>
     </div>
 
-    <!-- View 3: Coin Toss Screen & Background Timer (केवल यही स्क्रीन खुलेगी अप्रूवल के बाद) -->
+    <!-- View 3: Coin Toss Screen & Background Real-time Timer -->
     <div id="gameView" class="hidden">
         <h2>🪙 कॉइन टॉस स्क्रीन</h2>
         
-        <!-- कॉइन टॉस का मुख्य एरिया -->
         <div class="coin-toss-screen">
-            <p>आपका पेमेंट स्वीकृत हो गया है! अब आप कॉइन टॉस खेल सकते हैं।</p>
+            <p>आपका पेमेंट स्वीकृत हो गया है! अब आप कॉइन टॉस खेल सकते हैं.</p>
             <div id="coinElement" class="coin">COIN</div>
             <button class="toss-btn" onclick="tossCoin()">टॉस करें (Toss)</button>
             <p id="tossResult" style="margin-top: 10px; font-weight: bold; color: #333;"></p>
         </div>
 
-        <!-- 24 घंटे का बैकग्राउंड टाइमर बॉक्स -->
         <div class="timer-box">
             <p style="margin: 0; font-size: 13px; color: #555;">एक्सेस समाप्त होने में बचा समय:</p>
             <div id="countdownTimer" class="timer">24:00:00</div>
@@ -159,12 +156,12 @@
 </div>
 
 <script>
-    // आपका Web App URL यहाँ सेट है
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzr2TXZvKa4gKYClEb9_nCJCGEMNJi1GTpskoMFdvjkI65nXTed1Q_G_4AgoMUc6Qn7ow/exec";
 
     let timerInterval = null;
     let pollInterval = null;
 
+    // ऐप या पेज खुलते ही लोकल स्टोरेज चेक करेगा
     window.onload = function() {
         checkLocalSession();
     };
@@ -176,11 +173,15 @@
         if (savedExpiry) {
             const timeLeft = parseInt(savedExpiry) - new Date().getTime();
             if (timeLeft > 0) {
+                // समय बचा है, तो गेम स्क्रीन दिखाओ और Thunkable को सिग्नल भेजो
                 showGameView(savedExpiry);
+                sendSignalToThunkable("GOTO_COIN_TOSS");
                 return;
             } else {
+                // 24 घंटे खत्म हो चुके हैं, सब कुछ साफ़ करके पेमेंट स्क्रीन दिखाओ
                 localStorage.clear();
                 showPaymentView();
+                sendSignalToThunkable("GOTO_PAYMENT");
                 return;
             }
         }
@@ -284,28 +285,29 @@
             localStorage.setItem('user_expiry', expiryTime);
         }
         showGameView(localStorage.getItem('user_expiry'));
+        sendSignalToThunkable("GOTO_COIN_TOSS");
     }
 
-    // यह फंक्शन केवल कॉइन टॉस वाली स्क्रीन (gameView) को ऑन करेगा
     function showGameView(expiryTime) {
         if (pollInterval) clearInterval(pollInterval);
 
         document.getElementById('paymentView').classList.add('hidden');
         document.getElementById('pendingView').classList.add('hidden');
-        document.getElementById('gameView').classList.remove('hidden'); // सिर्फ कॉइन टॉस स्क्रीन खुलेगी
+        document.getElementById('gameView').classList.remove('hidden');
 
         if (timerInterval) clearInterval(timerInterval);
 
-        // 24 घंटे का बैकग्राउंड टाइमर
+        // रियल-टाइम बैकग्राउंड टाइमर जो फोन की घड़ी के हिसाब से हमेशा सही समय दिखाएगा
         timerInterval = setInterval(() => {
             const now = new Date().getTime();
             const distance = parseInt(expiryTime) - now;
 
             if (distance <= 0) {
                 clearInterval(timerInterval);
-                localStorage.clear();
+                localStorage.clear(); // समय खत्म होने पर डेटा साफ़ ताकि दोबारा पेमेंट मांग सके
                 alert('आपके 24 घंटे पूरे हो चुके हैं। अब दोबारा पेमेंट पेज खुलेगा।');
                 showPaymentView();
+                sendSignalToThunkable("GOTO_PAYMENT");
                 return;
             }
 
@@ -326,7 +328,14 @@
         document.getElementById('paymentView').classList.remove('hidden');
     }
 
-    // कॉइन टॉस करने का लॉजिक
+    function sendSignalToThunkable(action) {
+        if (window.ReactNativeWebView) {
+            window.ReactNativeWebView.postMessage(action);
+        } else if (window.parent) {
+            window.parent.postMessage(action, "*");
+        }
+    }
+
     function tossCoin() {
         const resultText = document.getElementById('tossResult');
         const coin = document.getElementById('coinElement');
