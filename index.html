@@ -3,251 +3,266 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment & 24Hr Lock</title>
+    <title>पेमेंट और अप्रूवल सिस्टम</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
-            text-align: center;
-            padding-top: 15px;
-            color: #333;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
             margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
         }
-        .box {
-            background: #fff;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            display: inline-block;
-            width: 85%;
-            max-width: 320px;
-        }
-        h3 { color: #007BFF; margin-bottom: 5px; font-size: 16px; }
-        p { font-size: 12px; color: #555; margin: 6px 0; }
-        .qr-container img {
-            width: 150px;
-            height: 150px;
-            border-radius: 6px;
-            border: 1px solid #ddd;
-            margin-top: 5px;
-        }
-        .input-group {
-            margin-top: 10px;
-            text-align: left;
-        }
-        label { font-size: 11px; font-weight: bold; color: #444; }
-        input {
+        .container {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             width: 100%;
-            padding: 6px;
-            margin-top: 3px;
-            margin-bottom: 8px;
-            box-sizing: border-box;
+            max-width: 400px;
+            text-align: center;
+        }
+        h2 { color: #333; margin-bottom: 20px; }
+        .qr-box img {
+            width: 200px;
+            height: 200px;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+            margin-bottom: 15px;
+        }
+        input, button {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
             border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 12px;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
         }
         button {
-            background-color: #007BFF;
+            background-color: #28a745;
             color: white;
             border: none;
-            padding: 8px 12px;
-            border-radius: 4px;
             cursor: pointer;
-            width: 100%;
-            font-size: 13px;
-        }
-        button:hover { background-color: #0056b3; }
-        
-        #screenAlert {
-            color: #721c24;
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
-            padding: 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            margin-bottom: 10px;
-            display: none;
-            text-align: center;
             font-weight: bold;
+            transition: background 0.3s;
         }
-
-        #statusBox {
-            margin-top: 10px;
-            padding: 8px;
-            background: #e9ecef;
-            border-radius: 4px;
-            font-size: 12px;
+        button:hover { background-color: #218838; }
+        .hidden { display: none !important; }
+        .status-box {
+            padding: 20px;
+            background: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+            border-radius: 6px;
+            margin-top: 15px;
         }
-
-        #countdown {
-            font-size: 14px;
+        .game-box {
+            padding: 20px;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            border-radius: 6px;
+        }
+        .timer {
+            font-size: 22px;
             font-weight: bold;
-            color: #28a745;
-            margin-top: 5px;
+            color: #dc3545;
+            margin: 15px 0;
         }
     </style>
 </head>
 <body>
 
-    <div class="box">
-        <h3>पेमेंट और अप्रूवल</h3>
-        
-        <div class="qr-container">
-            <p><b>QR कोड स्कैन करें:</b></p>
+<div class="container">
+    <!-- View 1: Payment & Submission Form -->
+    <div id="paymentView">
+        <h2>भुगतान करें (Payment)</h2>
+        <div class="qr-box">
             <img src="https://i.ibb.co/20nfkZzS/qr-image.jpg" alt="QR Code">
         </div>
-
-        <div class="input-group" id="formGroup">
-            <div id="screenAlert">कृपया अपना नाम और UTR नंबर दोनों दर्ज करें!</div>
-
-            <label>आपका नाम (Name):</label>
-            <input type="text" id="userNameInput" placeholder="नाम दर्ज करें">
-            
-            <label>UTR नंबर:</label>
-            <input type="text" id="utrInput" placeholder="UTR नंबर दर्ज करें">
-            
-            <button onclick="submitDetails()">डेटा सबमिट करें</button>
-        </div>
-
-        <div id="statusBox">
-            <p id="statusMsg"><b>Status:</b> डिटेल्स भरें</p>
-            <p id="timerMsg">प्रतीक्षा की जा रही है...</p>
-            <div id="countdown"></div>
-        </div>
+        <p style="font-size: 14px; color: #666;">QR कोड को स्कैन करके पेमेंट करें और नीचे विवरण भरें।</p>
+        
+        <input type="text" id="userName" placeholder="अपना पूरा नाम दर्ज करें" required>
+        <input type="text" id="utrNumber" placeholder="UTR / Transaction Number दर्ज करें" required>
+        <button onclick="submitDetails()">सबमिट करें</button>
     </div>
 
-    <script>
-        // आपका बिल्कुल नया Apps Script Web App URL यहाँ सेट है
-        const WEB_URL = "https://script.google.com/macros/s/AKfycbzDmv9k-uCKLqYXZQwXpbNrDBzaJglcWjEJpNQrfwCeWWUTORxFurIAd4XML9MYmzf_7w/exec";
-        let checkInterval = null;
-        let countdownInterval = null;
+    <!-- View 2: Pending Approval Screen -->
+    <div id="pendingView" class="hidden">
+        <h2>समीक्षाधीन (Under Review)</h2>
+        <div class="status-box">
+            <p><strong>Pending</strong></p>
+            <p>एडमिन अप्रूवल का इंतज़ार है। कृपया प्रतीक्षा करें, शीट अप्रूव होते ही पेज स्वतः अपडेट हो जाएगा।</p>
+        </div>
+        <button onclick="checkStatus()" style="background-color: #17a2b8; margin-top: 20px;">स्टेटस दोबारा चेक करें</button>
+    </div>
 
-        window.onload = function() {
-            let savedExpiry = localStorage.getItem("lockExpiryTime");
-            let savedName = localStorage.getItem("activeUserName");
+    <!-- View 3: Game / Access Granted & Timer Screen -->
+    <div id="gameView" class="hidden">
+        <h2>स्वागत है! गेम चालू है</h2>
+        <div class="game-box">
+            <p>आपका भुगतान सफल और स्वीकृत हो गया है।</p>
+            <p>शेष समय (24 घंटे का टाइमर):</p>
+            <div id="countdownTimer" class="timer">24:00:00</div>
+        </div>
+    </div>
+</div>
 
-            if (savedExpiry && savedName) {
-                let now = new Date().getTime();
-                if (now < parseInt(savedExpiry)) {
-                    document.getElementById("formGroup").style.display = "none";
-                    document.getElementById("statusMsg").innerHTML = "<b>Status:</b> Approved";
-                    document.getElementById("timerMsg").innerText = "सफलतापूर्वक अप्रूव्ड है!";
-                    startTimer(parseInt(savedExpiry));
-                    sendToApp("GOTO_GAME");
-                    return;
-                } else {
-                    localStorage.removeItem("lockExpiryTime");
-                    localStorage.removeItem("activeUserName");
-                }
-            }
+<script>
+    // आपका सेट किया हुआ Web App URL यहाँ जुड़ा हुआ है
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzab6p70e4sMyHnYZBLLA-AKOC1sKfRUIc1SvIFLgNDolduK-6AgvYn3VHlOZVK8pJdcQ/exec";
 
-            document.getElementById("userNameInput").value = "";
-            document.getElementById("utrInput").value = "";
-        }
+    let timerInterval = null;
 
-        function submitDetails() {
-            let name = document.getElementById("userNameInput").value.trim();
-            let utr = document.getElementById("utrInput").value.trim();
-            let alertBox = document.getElementById("screenAlert");
+    window.onload = function() {
+        checkLocalSession();
+    };
 
-            if(!name || !utr) {
-                alertBox.style.display = "block";
+    function checkLocalSession() {
+        const savedUtr = localStorage.getItem('user_utr');
+        const savedExpiry = localStorage.getItem('user_expiry');
+
+        if (savedExpiry) {
+            const timeLeft = parseInt(savedExpiry) - new Date().getTime();
+            if (timeLeft > 0) {
+                showGameView(savedExpiry);
                 return;
             } else {
-                alertBox.style.display = "none";
+                // 24 घंटे पूरे हो चुके हैं, डेटा साफ़ करें और पेमेंट पेज पर भेजें
+                localStorage.clear();
+                showPaymentView();
+                return;
             }
-
-            localStorage.setItem("activeUserName", name);
-            document.getElementById("statusMsg").innerHTML = "<b>Status:</b> शीट पर भेजा जा रहा है...";
-
-            let submitUrl = `${WEB_URL}?name=${encodeURIComponent(name)}&utr=${encodeURIComponent(utr)}`;
-
-            fetch(submitUrl)
-                .then(res => res.json())
-                .then(data => {
-                    document.getElementById("statusMsg").innerHTML = "<b>Status:</b> Pending";
-                    document.getElementById("timerMsg").innerText = "डेटा दर्ज हो गया है, एडमिन अप्रूवल का इंतज़ार है...";
-                    
-                    if(checkInterval) clearInterval(checkInterval);
-                    checkInterval = setInterval(checkStatus, 4000);
-                })
-                .catch(err => {
-                    document.getElementById("statusMsg").innerHTML = "<b>Status:</b> Pending";
-                    document.getElementById("timerMsg").innerText = "डेटा दर्ज हो गया है, एडमिन अप्रूवल का इंतज़ार है...";
-                    
-                    if(checkInterval) clearInterval(checkInterval);
-                    checkInterval = setInterval(checkStatus, 4000);
-                });
         }
 
-        function checkStatus() {
-            let name = localStorage.getItem("activeUserName");
-            if(!name) return;
+        if (savedUtr) {
+            // अगर UTR सेव है लेकिन अभी अप्रूव नहीं हुआ था, तो पेंडिंग स्क्रीन दिखाएं
+            document.getElementById('paymentView').classList.add('hidden');
+            document.getElementById('pendingView').classList.remove('hidden');
+            // बैकग्राउंड में आटोमैटिक स्टेटस चेक शुरू करें
+            startAutoPoll(savedUtr);
+        }
+    }
 
-            let url = `${WEB_URL}?name=${encodeURIComponent(name)}`;
+    async function submitDetails() {
+        const name = document.getElementById('userName').value.trim();
+        const utr = document.getElementById('utrNumber').value.trim();
 
-            fetch(url)
-                .then(res => res.json())
-                .then(data => {
-                    let status = data.status ? data.status.trim().toLowerCase() : "pending";
-                    let timestamp = data.timestamp ? data.timestamp.trim() : "";
-
-                    document.getElementById("statusMsg").innerHTML = "<b>Status:</b> " + data.status;
-
-                    // बेहद सख्त नियम: जब तक शीट में अक्षरशः 'approved' नहीं होगा, स्क्रीन कभी नहीं बदलेगी!
-                    if (status === "approved") {
-                        clearInterval(checkInterval); 
-                        document.getElementById("formGroup").style.display = "none";
-
-                        let approvalTime = timestamp ? new Date(timestamp).getTime() : new Date().getTime();
-                        let expiryTime = approvalTime + (24 * 60 * 60 * 1000);
-                        
-                        localStorage.setItem("lockExpiryTime", expiryTime);
-                        startTimer(expiryTime);
-
-                        document.getElementById("timerMsg").innerText = "सफलतापूर्वक अप्रूव हो गया!";
-                        sendToApp("GOTO_GAME");
-                    } else {
-                        document.getElementById("timerMsg").innerText = "Pending: एडमिन अप्रूवल का इंतज़ार है...";
-                    }
-                })
-                .catch(err => {
-                    console.log("Checking status safely...");
-                });
+        if (!name || !utr) {
+            alert('कृपया नाम और UTR नंबर दोनों भरें!');
+            return;
         }
 
-        function startTimer(expiryTime) {
-            if(countdownInterval) clearInterval(countdownInterval);
+        document.querySelector('button').innerText = 'सबमिट हो रहा है...';
 
-            countdownInterval = setInterval(function() {
-                let now = new Date().getTime();
-                let distance = expiryTime - now;
+        try {
+            let response = await fetch(WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify({ name: name, utr: utr })
+            });
+            let result = await response.json();
 
-                if (distance < 0) {
-                    clearInterval(countdownInterval);
-                    localStorage.removeItem("lockExpiryTime");
-                    localStorage.removeItem("activeUserName");
-                    document.getElementById("countdown").innerText = "24 घंटे समाप्त हो चुके हैं!";
-                    sendToApp("GOTO_PAYMENT");
-                    location.reload();
-                    return;
+            if (result.status === 'success') {
+                localStorage.setItem('user_utr', utr);
+                
+                if (result.sheetStatus === 'Approved') {
+                    handleApproval(result.expiryTime);
+                } else {
+                    document.getElementById('paymentView').classList.add('hidden');
+                    document.getElementById('pendingView').classList.remove('hidden');
+                    startAutoPoll(utr);
                 }
-
-                let hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                let minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                let seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-                document.getElementById("countdown").innerText = `समय शेष: ${hours}h ${minutes}m ${seconds}s`;
-            }, 1000);
-        }
-
-        function sendToApp(action) {
-            if (window.ReactNativeWebView) {
-                window.ReactNativeWebView.postMessage(action);
-            } else if (window.parent) {
-                window.parent.postMessage(action, "*");
+            } else {
+                alert('एरर: ' + result.message);
+                document.querySelector('button').innerText = 'सबमिट करें';
             }
+        } catch (error) {
+            alert('नेटवर्क या यूआरएल में गड़बड़ है। कृपया सही Web App URL जांचें।');
+            document.querySelector('button').innerText = 'सबमिट करें';
         }
-    </script>
+    }
+
+    async function checkStatus() {
+        const utr = localStorage.getItem('user_utr');
+        if (!utr) return;
+
+        try {
+            let response = await fetch(`${WEB_APP_URL}?utr=${utr}`);
+            let result = await response.json();
+
+            if (result.status === 'success') {
+                if (result.sheetStatus === 'Approved') {
+                    handleApproval(result.expiryTime);
+                } else {
+                    alert('आपका स्टेटस अभी भी "Pending" है। कृपया एडमिन द्वारा अप्रूव होने तक प्रतीक्षा करें।');
+                }
+            }
+        } catch (e) {
+            console.error('Status check failed', e);
+        }
+    }
+
+    function startAutoPoll(utr) {
+        // हर 10 सेकंड में ऑटोमैटिकली शीट चेक करेगा कि अप्रूवल मिला या नहीं
+        setInterval(async () => {
+            try {
+                let response = await fetch(`${WEB_APP_URL}?utr=${utr}`);
+                let result = await response.json();
+                if (result.status === 'success' && result.sheetStatus === 'Approved') {
+                    handleApproval(result.expiryTime);
+                }
+            } catch (e) {
+                console.error('Polling error', e);
+            }
+        }, 10000); // 10 seconds interval
+    }
+
+    function handleApproval(expiryTime) {
+        if (!localStorage.getItem('user_expiry')) {
+            localStorage.setItem('user_expiry', expiryTime);
+        }
+        showGameView(localStorage.getItem('user_expiry'));
+    }
+
+    function showGameView(expiryTime) {
+        document.getElementById('paymentView').classList.add('hidden');
+        document.getElementById('pendingView').classList.add('hidden');
+        document.getElementById('gameView').classList.remove('hidden');
+
+        if (timerInterval) clearInterval(timerInterval);
+
+        timerInterval = setInterval(() => {
+            const now = new Date().getTime();
+            const distance = parseInt(expiryTime) - now;
+
+            if (distance <= 0) {
+                clearInterval(timerInterval);
+                localStorage.clear();
+                alert('आपके 24 घंटे पूरे हो चुके हैं!');
+                showPaymentView();
+                return;
+            }
+
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60 * 1000));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            document.getElementById('countdownTimer').innerText = 
+                String(hours).padStart(2, '0') + ":" + 
+                String(minutes).padStart(2, '0') + ":" + 
+                String(seconds).padStart(2, '0');
+        }, 1000);
+    }
+
+    function showPaymentView() {
+        document.getElementById('gameView').classList.add('hidden');
+        document.getElementById('pendingView').classList.add('hidden');
+        document.getElementById('paymentView').classList.remove('hidden');
+    }
+</script>
+
 </body>
 </html>
