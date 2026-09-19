@@ -117,19 +117,19 @@
     </div>
 
     <script>
-        const WEB_URL = "https://script.google.com/macros/s/AKfycbzTpAmln0KRVdw4FJOjAWrO4NmFPPiZ8lBsX3CLg4h88Ke33otZ953ijAUm-R-rNIVQug/exec";
+        // आपका बिल्कुल नया Apps Script Web App URL यहाँ सेट है
+        const WEB_URL = "https://script.google.com/macros/s/AKfycbzIKPtt8nRJTyxcOePGgBVIlW-lywJdn2_j6b-HHWYID2Lf-flCJddK0iZzO6imJAPp-A/exec";
         let checkInterval = null;
         let countdownInterval = null;
 
-        // पेज खुलते ही चेक करो कि क्या पहले से कोई 24 घंटे का टाइमर चालू (Saved) है या नहीं
+        // पेज खुलते समय चेक करेगा कि क्या पहले से कोई वैलिड 24 घंटे का टाइमर सेव है या नहीं
         window.onload = function() {
             let savedExpiry = localStorage.getItem("lockExpiryTime");
             let savedName = localStorage.getItem("activeUserName");
 
-            if (savedExpiry) {
+            if (savedExpiry && savedName) {
                 let now = new Date().getTime();
                 if (now < parseInt(savedExpiry)) {
-                    // अगर 24 घंटे अभी पूरे नहीं हुए हैं, तो फॉर्म छुपाओ और सीधा टाइमर चलाओ
                     document.getElementById("formGroup").style.display = "none";
                     document.getElementById("statusMsg").innerHTML = "<b>Status:</b> Approved";
                     document.getElementById("timerMsg").innerText = "सफलतापूर्वक अप्रूव्ड है!";
@@ -137,13 +137,11 @@
                     sendToApp("GOTO_GAME");
                     return;
                 } else {
-                    // अगर 24 घंटे खत्म हो चुके हैं, तो पुराना डेटा साफ करो ताकि नया पेमेंट मांग सके
                     localStorage.removeItem("lockExpiryTime");
                     localStorage.removeItem("activeUserName");
                 }
             }
 
-            // अगर सेव नहीं है तो इनपुट बॉक्स खाली रखो
             document.getElementById("userNameInput").value = "";
             document.getElementById("utrInput").value = "";
         }
@@ -161,22 +159,24 @@
             }
 
             localStorage.setItem("activeUserName", name);
-            
             document.getElementById("statusMsg").innerHTML = "<b>Status:</b> शीट पर भेजा जा रहा है...";
 
             let submitUrl = `${WEB_URL}?name=${encodeURIComponent(name)}&utr=${encodeURIComponent(utr)}`;
 
+            // गूगल शीट पर डेटा भेजने की रिक्वेस्ट
             fetch(submitUrl)
                 .then(res => res.json())
                 .then(data => {
-                    document.getElementById("statusMsg").innerHTML = "<b>Status:</b> Pending (अप्रूवल का इंतज़ार है)";
+                    document.getElementById("statusMsg").innerHTML = "<b>Status:</b> Pending";
                     document.getElementById("timerMsg").innerText = "डेटा दर्ज हो गया है, एडमिन अप्रूवल का इंतज़ार है...";
                     
                     if(checkInterval) clearInterval(checkInterval);
                     checkInterval = setInterval(checkStatus, 4000);
                 })
                 .catch(err => {
-                    document.getElementById("statusMsg").innerHTML = "<b>Status:</b> Pending (अप्रूवल का इंतज़ार है)";
+                    document.getElementById("statusMsg").innerHTML = "<b>Status:</b> Pending";
+                    document.getElementById("timerMsg").innerText = "डेटा दर्ज हो गया है, एडमिन अप्रूवल का इंतज़ार है...";
+                    
                     if(checkInterval) clearInterval(checkInterval);
                     checkInterval = setInterval(checkStatus, 4000);
                 });
@@ -196,11 +196,11 @@
 
                     document.getElementById("statusMsg").innerHTML = "<b>Status:</b> " + status;
 
+                    // नियम: जब तक शीट में असली 'Approved' न लिखा हो, तब तक स्क्रीन बिल्कुल नहीं बदलेगी
                     if (status.toLowerCase() === "approved") {
-                        clearInterval(checkInterval);
+                        clearInterval(checkInterval); 
                         document.getElementById("formGroup").style.display = "none";
 
-                        // 24 घंटे का समय कैलकुलेट करके हमेशा के लिए localStorage में सेव करो
                         let approvalTime = timestamp ? new Date(timestamp).getTime() : new Date().getTime();
                         let expiryTime = approvalTime + (24 * 60 * 60 * 1000);
                         
@@ -228,12 +228,10 @@
 
                 if (distance < 0) {
                     clearInterval(countdownInterval);
-                    // 24 घंटे खत्म होने पर सब साफ करके वापस पेमेंट स्क्रीन पर भेजो
                     localStorage.removeItem("lockExpiryTime");
                     localStorage.removeItem("activeUserName");
                     document.getElementById("countdown").innerText = "24 घंटे समाप्त हो चुके हैं!";
                     sendToApp("GOTO_PAYMENT");
-                    // पेज को रिलोड कर दो ताकि दोबारा नाम/UTR मांगे
                     location.reload();
                     return;
                 }
