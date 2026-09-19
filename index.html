@@ -131,10 +131,11 @@
         <h2>समीक्षाधीन (Under Review)</h2>
         <div class="status-box">
             <p><strong>Pending</strong></p>
-            <p>एडमिन अप्रूवल का इंतज़ार है। जैसे ही अप्रूव होगा, स्क्रीन स्वतः बदल जाएगी।</p>
+            <p>एडमिन अप्रूवल का इंतज़ार है। जैसे ही गूगल शीट से अप्रूव होगा, स्क्रीन स्वतः बदल जाएगी।</p>
         </div>
         <div id="statusError" class="error-msg"></div>
-        <button onclick="checkStatusManually()" style="background-color: #17a2b8; margin-top: 20px;">स्टेटस दोबारा चेक करें</button>
+        <button onclick="checkStatusManually()" style="background-color: #17a2b8; margin-top: 15px;">स्टेटस दोबारा चेक करें</button>
+        <button onclick="resetApp()" style="background-color: #6c757d; margin-top: 5px; font-size: 13px; padding: 8px;">डेटा रीसेट करें (Reset)</button>
     </div>
 
     <!-- View 3: Coin Toss Screen & Background Real-time Timer -->
@@ -161,24 +162,23 @@
     let timerInterval = null;
     let pollInterval = null;
 
-    // ऐप या पेज खुलते ही लोकल स्टोरेज चेक करेगा
     window.onload = function() {
         checkLocalSession();
     };
 
-    function checkLocalSession() {
+    async function checkLocalSession() {
         const savedUtr = localStorage.getItem('user_utr');
         const savedExpiry = localStorage.getItem('user_expiry');
 
+        // यदि पहले से टाइमर/एक्सेस चालू है और समय बचा है
         if (savedExpiry) {
             const timeLeft = parseInt(savedExpiry) - new Date().getTime();
             if (timeLeft > 0) {
-                // समय बचा है, तो गेम स्क्रीन दिखाओ और Thunkable को सिग्नल भेजो
                 showGameView(savedExpiry);
                 sendSignalToThunkable("GOTO_COIN_TOSS");
                 return;
             } else {
-                // 24 घंटे खत्म हो चुके हैं, सब कुछ साफ़ करके पेमेंट स्क्रीन दिखाओ
+                // समय खत्म हो गया है
                 localStorage.clear();
                 showPaymentView();
                 sendSignalToThunkable("GOTO_PAYMENT");
@@ -186,9 +186,18 @@
             }
         }
 
+        // यदि UTR सेव है लेकिन अभी तक अप्रूवल नहीं मिला था, तो तुरंत गूगल शीट से असली स्टेटस चेक करो
         if (savedUtr) {
             document.getElementById('paymentView').classList.add('hidden');
             document.getElementById('pendingView').classList.remove('hidden');
+            
+            // तुरंत एक बार सर्वर से पूछो कि सच में अप्रूव हुआ है या नहीं
+            let isApproved = await verifyStatusFromServer(savedUtr);
+            if (isApproved) {
+                return; // अगर अप्रूव हो चुका होगा तो handleApproval अंदर ही कॉल हो जाएगा
+            }
+
+            // अगर अभी भी पेंडिंग है तो ऑटो-पोलिंग चालू रखो
             startAutoPoll(savedUtr);
         }
     }
@@ -219,7 +228,8 @@
             if (result.status === 'success') {
                 localStorage.setItem('user_utr', utr);
                 
-                if (result.sheetStatus && result.sheetStatus.toLowerCase() === 'approved') {
+                // कड़ाई से चेक करो कि शीट में स्टेटस "approved" है या नहीं
+                if (result.sheetStatus && result.sheetStatus.toLowerCase().trim() === 'approved') {
                     handleApproval(result.expiryTime);
                 } else {
                     document.getElementById('paymentView').classList.add('hidden');
@@ -238,28 +248,33 @@
         }
     }
 
-    async function checkStatusManually() {
-        const utr = localStorage.getItem('user_utr');
-        if (!utr) return;
-
-        const errorDiv = document.getElementById('statusError');
-        errorDiv.innerText = "जाँच की जा रही है...";
-
+    async function verifyStatusFromServer(utr) {
         try {
             let response = await fetch(`${WEB_APP_URL}?utr=${encodeURIComponent(utr)}`);
             let result = await response.json();
 
             if (result.status === 'success') {
-                if (result.sheetStatus && result.sheetStatus.toLowerCase() === 'approved') {
+                if (result.sheetStatus && result.sheetStatus.toLowerCase().trim() === 'approved') {
                     handleApproval(result.expiryTime);
-                } else {
-                    errorDiv.innerText = 'स्टेटस अभी भी "Pending" है।';
+                    return true;
                 }
-            } else {
-                errorDiv.innerText = 'डेटा नहीं मिला।';
             }
         } catch (e) {
-            errorDiv.innerText = 'कनेक्शन एरर।';
+            console.error('Server check error', e);
+        }
+        return false;
+    }
+
+    async function checkStatusManually() {
+        const utr = localStorage.getItem('user_utr');
+        if (!utr) return;
+
+        const errorDiv = document.getElementById('statusError');
+        errorDiv.innerText = "गूगल शीट से जाँच की जा रही है...";
+
+        let approved = await verifyStatusFromServer(utr);
+        if (!approved) {
+            errorDiv.innerText = 'स्टेटस अभी भी "Pending" है। कृपया एडमिन के अप्रूव करने का इंतज़ार करें।';
         }
     }
 
@@ -267,23 +282,26 @@
         if (pollInterval) clearInterval(pollInterval);
 
         pollInterval = setInterval(async () => {
-            try {
-                let response = await fetch(`${WEB_APP_URL}?utr=${encodeURIComponent(utr)}`);
-                let result = await response.json();
-                if (result.status === 'success' && result.sheetStatus && result.sheetStatus.toLowerCase() === 'approved') {
-                    clearInterval(pollInterval);
-                    handleApproval(result.expiryTime);
-                }
-            } catch (e) {
-                console.error('Polling error', e);
+            let approved = await verifyStatusFromServer(utr);
+            if (approved) {
+                clearInterval(pollInterval);
             }
-        }, 5000);
+        }, 5000); // हर 5 सेकंड में गूगल शीट चेक करेगा
     }
 
     function handleApproval(expiryTime) {
-        if (!localStorage.getItem('user_expiry')) {
-            localStorage.setItem('user_expiry', expiryTime);
+        if (pollInterval) clearInterval(pollInterval);
+        
+        let finalExpiry = expiryTime;
+        if (!finalExpiry) {
+            // अगर एक्सपायरी टाइम सर्वर से नहीं आया, तो अपने आप 24 घंटे बाद का समय सेट कर लो
+            finalExpiry = new Date().getTime() + (24 * 60 * 60 * 1000);
         }
+
+        if (!localStorage.getItem('user_expiry')) {
+            localStorage.setItem('user_expiry', finalExpiry);
+        }
+
         showGameView(localStorage.getItem('user_expiry'));
         sendSignalToThunkable("GOTO_COIN_TOSS");
     }
@@ -297,14 +315,13 @@
 
         if (timerInterval) clearInterval(timerInterval);
 
-        // रियल-टाइम बैकग्राउंड टाइमर जो फोन की घड़ी के हिसाब से हमेशा सही समय दिखाएगा
         timerInterval = setInterval(() => {
             const now = new Date().getTime();
             const distance = parseInt(expiryTime) - now;
 
             if (distance <= 0) {
                 clearInterval(timerInterval);
-                localStorage.clear(); // समय खत्म होने पर डेटा साफ़ ताकि दोबारा पेमेंट मांग सके
+                localStorage.clear(); 
                 alert('आपके 24 घंटे पूरे हो चुके हैं। अब दोबारा पेमेंट पेज खुलेगा।');
                 showPaymentView();
                 sendSignalToThunkable("GOTO_PAYMENT");
@@ -326,6 +343,13 @@
         document.getElementById('gameView').classList.add('hidden');
         document.getElementById('pendingView').classList.add('hidden');
         document.getElementById('paymentView').classList.remove('hidden');
+    }
+
+    function resetApp() {
+        if (confirm("क्या आप सारा डेटा साफ़ करके शुरुआत से शुरू करना चाहते हैं?")) {
+            localStorage.clear();
+            location.reload();
+        }
     }
 
     function sendSignalToThunkable(action) {
