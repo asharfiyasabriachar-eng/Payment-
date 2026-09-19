@@ -58,7 +58,6 @@
         }
         button:hover { background-color: #0056b3; }
         
-        /* यह है वह स्क्रीन के अंदर दिखने वाला चेतावनी बॉक्स (कोई पॉप-अप नहीं) */
         #screenAlert {
             color: #721c24;
             background-color: #f8d7da;
@@ -92,8 +91,7 @@
         </div>
 
         <div class="input-group">
-            <!-- यह स्क्रीन के अंदर दिखने वाली चेतावनी है -->
-            <div id="screenAlert">कृपया अपना नाम और UTR नंबर दोनों दर्ज करना अनिवार्य है!</div>
+            <div id="screenAlert">कृपया अपना नाम और UTR नंबर दोनों दर्ज करें!</div>
 
             <label>आपका नाम (Name):</label>
             <input type="text" id="userNameInput" placeholder="नाम दर्ज करें">
@@ -110,9 +108,16 @@
         </div>
     </div>
 
+    <!-- छिपा हुआ फ्रेम ताकि बिना रुकावट शीट में डेटा जाए -->
+    <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
+    <form id="hiddenForm" action="https://script.google.com/macros/s/AKfycbyhbKmSDtVuxLhsfagcGap6WwRw2zoNUSj8ni9bB4JdHJeNZV0KG-R95bQEPahcl5N3-A/exec" method="GET" target="hidden_iframe" style="display:none;">
+        <input type="hidden" name="name" id="formName">
+        <input type="hidden" name="utr" id="formUtr">
+    </form>
+
     <script>
         // आपका नया और अपडेटेड Google Apps Script Web App URL
-        const WEB_URL = "https://script.google.com/macros/s/AKfycbyC8wmCfcj3WhDMy8vE2AAnt2TWGtaFt2lkkKlGyjrjl2kf6hG_t9sGTBY02r7nbKO2Qg/exec";
+        const WEB_URL = "https://script.google.com/macros/s/AKfycbyhbKmSDtVuxLhsfagcGap6WwRw2zoNUSj8ni9bB4JdHJeNZV0KG-R95bQEPahcl5N3-A/exec";
 
         window.onload = function() {
             if(localStorage.getItem("userName")) {
@@ -120,7 +125,8 @@
                 if(localStorage.getItem("utrNumber")) {
                     document.getElementById("utrInput").value = localStorage.getItem("utrNumber");
                 }
-                checkStatus(false);
+                checkStatus();
+                setInterval(checkStatus, 4000);
             }
         }
 
@@ -129,7 +135,6 @@
             let utr = document.getElementById("utrInput").value.trim();
             let alertBox = document.getElementById("screenAlert");
 
-            // यदि नाम या UTR खाली है, तो स्क्रीन के अंदर ही लाल बॉक्स में दिखेगा (कोई पॉप-अप नहीं)
             if(!name || !utr) {
                 alertBox.style.display = "block";
                 return;
@@ -141,25 +146,24 @@
             localStorage.setItem("utrNumber", utr);
             
             document.getElementById("statusMsg").innerHTML = "<b>Status:</b> शीट पर भेजा जा रहा है...";
-            
-            // डेटा भेजना और स्टेटस चेक करना
-            checkStatus(true);
-            
-            // लगातार स्टेटस चेक करते रहना
-            setInterval(function() {
-                checkStatus(false);
-            }, 4000);
+
+            // फॉर्म के जरिए चुपचाप गूगल शीट में डेटा भेजना
+            document.getElementById("formName").value = name;
+            document.getElementById("formUtr").value = utr;
+            document.getElementById("hiddenForm").submit();
+
+            setTimeout(function() {
+                document.getElementById("statusMsg").innerHTML = "<b>Status:</b> Pending (अप्रूवल का इंतज़ार है)";
+                checkStatus();
+                setInterval(checkStatus, 4000);
+            }, 1500);
         }
 
-        function checkStatus(isSubmit) {
+        function checkStatus() {
             let name = localStorage.getItem("userName");
-            let utr = localStorage.getItem("utrNumber") || "";
             if(!name) return;
 
             let url = `${WEB_URL}?name=${encodeURIComponent(name)}`;
-            if(isSubmit) {
-                url += `&utr=${encodeURIComponent(utr)}`;
-            }
 
             fetch(url)
                 .then(res => res.json())
@@ -191,7 +195,7 @@
                     }
                 })
                 .catch(err => {
-                    console.log("Error checking status");
+                    console.log("Checking status...");
                 });
         }
 
@@ -203,4 +207,3 @@
     </script>
 </body>
 </html>
-                
