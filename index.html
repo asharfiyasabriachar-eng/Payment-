@@ -58,17 +58,18 @@
         }
         button:hover { background-color: #0056b3; }
         
-        /* पेज के अंदर दिखने वाला चेतावनी/एरर मैसेज बॉक्स (पॉप-अप नहीं) */
-        #inlineAlert {
-            color: #d9534f;
-            background-color: #f2dede;
-            border: 1px solid #ebccd1;
-            padding: 6px;
+        /* यह है वह स्क्रीन के अंदर दिखने वाला चेतावनी बॉक्स (कोई पॉप-अप नहीं) */
+        #screenAlert {
+            color: #721c24;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 8px;
             border-radius: 4px;
-            font-size: 11px;
-            margin-bottom: 8px;
+            font-size: 12px;
+            margin-bottom: 10px;
             display: none;
             text-align: center;
+            font-weight: bold;
         }
 
         #statusBox {
@@ -91,14 +92,14 @@
         </div>
 
         <div class="input-group">
+            <!-- यह स्क्रीन के अंदर दिखने वाली चेतावनी है -->
+            <div id="screenAlert">कृपया अपना नाम और UTR नंबर दोनों दर्ज करना अनिवार्य है!</div>
+
             <label>आपका नाम (Name):</label>
             <input type="text" id="userNameInput" placeholder="नाम दर्ज करें">
             
             <label>UTR नंबर:</label>
             <input type="text" id="utrInput" placeholder="UTR नंबर दर्ज करें">
-            
-            <!-- यहाँ पेज के अंदर ही वार्निंग दिखेगी, कोई पॉप-अप नहीं -->
-            <div id="inlineAlert">कृपया अपना नाम और UTR नंबर दोनों दर्ज करना अनिवार्य है!</div>
             
             <button onclick="submitDetails()">डेटा सबमिट करें</button>
         </div>
@@ -110,21 +111,25 @@
     </div>
 
     <script>
-        const WEB_URL = "https://script.google.com/macros/s/AKfycbzb8iEloYNNGihssFjrIX7IvIJwwICZKy0fUrPZOlPa3OSir9f9Ms0NCylS7-n8j7YMpQ/exec";
+        // आपका नया और अपडेटेड Google Apps Script Web App URL
+        const WEB_URL = "https://script.google.com/macros/s/AKfycbyC8wmCfcj3WhDMy8vE2AAnt2TWGtaFt2lkkKlGyjrjl2kf6hG_t9sGTBY02r7nbKO2Qg/exec";
 
         window.onload = function() {
             if(localStorage.getItem("userName")) {
                 document.getElementById("userNameInput").value = localStorage.getItem("userName");
-                checkStatus();
+                if(localStorage.getItem("utrNumber")) {
+                    document.getElementById("utrInput").value = localStorage.getItem("utrNumber");
+                }
+                checkStatus(false);
             }
         }
 
         function submitDetails() {
             let name = document.getElementById("userNameInput").value.trim();
             let utr = document.getElementById("utrInput").value.trim();
-            let alertBox = document.getElementById("inlineAlert");
+            let alertBox = document.getElementById("screenAlert");
 
-            // अगर नाम या UTR खाली है, तो पेज के अंदर ही लाल रंग में चेतावनी दिखाएगा
+            // यदि नाम या UTR खाली है, तो स्क्रीन के अंदर ही लाल बॉक्स में दिखेगा (कोई पॉप-अप नहीं)
             if(!name || !utr) {
                 alertBox.style.display = "block";
                 return;
@@ -133,30 +138,30 @@
             }
 
             localStorage.setItem("userName", name);
-            document.getElementById("statusMsg").innerHTML = "<b>Status:</b> गूगल शीट पर भेजा जा रहा है...";
-
-            // डेटा को सीधा गूगल शीट में पोस्ट करना (mode: 'no-cors' की वजह से रिस्पॉन्स साइलेंट रहता है, इसलिए हम इसके तुरंत बाद स्टेटस चेकिंग शुरू कर देते हैं)
-            fetch(WEB_URL, {
-                method: "POST",
-                mode: "no-cors",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name: name, utr: utr })
-            })
-            .then(() => {
-                document.getElementById("statusMsg").innerHTML = "<b>Status:</b> Pending (एडमिन अप्रूवल का इंतज़ार है)";
-                setInterval(checkStatus, 4000); // लगातार चेकिंग
-            })
-            .catch(err => {
-                console.error(err);
-                document.getElementById("statusMsg").innerHTML = "<b>Status:</b> सबमिट करने में त्रुटि!";
-            });
+            localStorage.setItem("utrNumber", utr);
+            
+            document.getElementById("statusMsg").innerHTML = "<b>Status:</b> शीट पर भेजा जा रहा है...";
+            
+            // डेटा भेजना और स्टेटस चेक करना
+            checkStatus(true);
+            
+            // लगातार स्टेटस चेक करते रहना
+            setInterval(function() {
+                checkStatus(false);
+            }, 4000);
         }
 
-        function checkStatus() {
+        function checkStatus(isSubmit) {
             let name = localStorage.getItem("userName");
+            let utr = localStorage.getItem("utrNumber") || "";
             if(!name) return;
 
-            fetch(`${WEB_URL}?name=${encodeURIComponent(name)}`)
+            let url = `${WEB_URL}?name=${encodeURIComponent(name)}`;
+            if(isSubmit) {
+                url += `&utr=${encodeURIComponent(utr)}`;
+            }
+
+            fetch(url)
                 .then(res => res.json())
                 .then(data => {
                     let status = data.status;
@@ -182,11 +187,11 @@
                             sendToThunkable("GOTO_GAME");
                         }
                     } else {
-                        document.getElementById("timerMsg").innerText = "एडमिन द्वारा अभी अप्रूव नहीं हुआ है।";
+                        document.getElementById("timerMsg").innerText = "Pending: एडमिन अप्रूवल का इंतज़ार है...";
                     }
                 })
                 .catch(err => {
-                    console.log("Checking status...");
+                    console.log("Error checking status");
                 });
         }
 
@@ -198,4 +203,4 @@
     </script>
 </body>
 </html>
-
+                
