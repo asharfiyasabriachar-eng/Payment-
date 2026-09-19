@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+            <!DOCTYPE html>
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment & UTR Verification</title>
+    <title>Payment & 24Hr Lock</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -64,26 +64,18 @@
             border-radius: 4px;
             font-size: 12px;
         }
-        .error-msg {
-            color: red;
-            font-size: 11px;
-            margin-bottom: 5px;
-            display: none;
-        }
     </style>
 </head>
 <body>
 
     <div class="box">
-        <h3 id="mainTitle">भुगतान और UTR सत्यापन</h3>
+        <h3>पेमेंट और अप्रूवल</h3>
         
-        <!-- QR कोड सेक्शन -->
         <div class="qr-container">
             <p><b>QR कोड स्कैन करें:</b></p>
-            <img src="https://i.ibb.co/20nfkZzS/qr-image.jpg" alt="Payment QR Code">
+            <img src="https://i.ibb.co/20nfkZzS/qr-image.jpg" alt="QR Code">
         </div>
 
-        <!-- यूजर इनपुट (नाम और UTR) -->
         <div class="input-group">
             <label>आपका नाम (Name):</label>
             <input type="text" id="userNameInput" placeholder="नाम दर्ज करें">
@@ -91,64 +83,61 @@
             <label>UTR नंबर:</label>
             <input type="text" id="utrInput" placeholder="UTR नंबर दर्ज करें">
             
-            <div id="errorText" class="error-msg">कृपया नाम और UTR दोनों दर्ज करना अनिवार्य है!</div>
-            
-            <button onclick="saveDetails()">डिटेल्स सबमिट करें</button>
+            <button onclick="submitDetails()">डेटा सबमिट करें</button>
         </div>
 
-        <!-- स्टेटस और टाइमर बॉक्स -->
         <div id="statusBox">
-            <p id="statusMsg"><b>Status:</b> कृपया डिटेल्स भरकर सबमिट करें</p>
+            <p id="statusMsg"><b>Status:</b> डिटेल्स भरें</p>
             <p id="timerMsg">प्रतीक्षा की जा रही है...</p>
         </div>
     </div>
 
     <script>
-        const WEB_URL = "https://script.google.com/macros/s/AKfycbyGcTv1TZ45PFwuEw4i-7kUDY6QMdCuyAjPzQRlAa4n-0X3jwS3tTBMrxASW7Kp_SgJMw/exec";
+        // आपका नया और अपडेटेड Google Apps Script Web App URL
+        const WEB_URL = "https://script.google.com/macros/s/AKfycbzb8iEloYNNGihssFjrIX7IvIJwwICZKy0fUrPZOlPa3OSir9f9Ms0NCylS7-n8j7YMpQ/exec";
 
         window.onload = function() {
             if(localStorage.getItem("userName")) {
                 document.getElementById("userNameInput").value = localStorage.getItem("userName");
-            }
-            if(localStorage.getItem("utrNumber")) {
-                document.getElementById("utrInput").value = localStorage.getItem("utrNumber");
-            }
-            // यदि पहले से नाम और UTR सेव हैं, तो तुरंत स्टेटस चेक शुरू कर दें
-            if(localStorage.getItem("userName") && localStorage.getItem("utrNumber")) {
-                checkPaymentStatus();
+                checkStatus();
             }
         }
 
-        function saveDetails() {
+        function submitDetails() {
             let name = document.getElementById("userNameInput").value.trim();
             let utr = document.getElementById("utrInput").value.trim();
-            let errorBox = document.getElementById("errorText");
 
-            // सख्त जाँच: यदि नाम या UTR खाली है, तो आगे नहीं बढ़ने देगा
-            if(name === "" || utr === "") {
-                errorBox.style.display = "block";
+            if(!name || !utr) {
+                alert("नाम और UTR दोनों भरना अनिवार्य है!");
                 return;
-            } else {
-                errorBox.style.display = "none";
             }
 
-            // लोकल स्टोरेज में सेव करना
             localStorage.setItem("userName", name);
-            localStorage.setItem("utrNumber", utr);
-            
-            document.getElementById("statusMsg").innerHTML = "<b>Status:</b> डिटेल्स सबमिट हो गई हैं। चेक हो रहा है...";
-            checkPaymentStatus();
+            document.getElementById("statusMsg").innerHTML = "<b>Status:</b> गूगल शीट पर भेजा जा रहा है...";
+
+            // डेटा को सीधा गूगल शीट में पोस्ट करना
+            fetch(WEB_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: name, utr: utr })
+            })
+            .then(() => {
+                document.getElementById("statusMsg").innerHTML = "<b>Status:</b> Pending (एडमिन अप्रूवल का इंतज़ार है)";
+                setInterval(checkStatus, 4000); // 4 सेकंड पर लगातार चेकिंग शुरू
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById("statusMsg").innerHTML = "<b>Status:</b> सबमिट करने में त्रुटि!";
+            });
         }
 
-        function checkPaymentStatus() {
-            let userName = document.getElementById("userNameInput").value.trim() || localStorage.getItem("userName") || "";
-            if(!userName) return;
+        function checkStatus() {
+            let name = localStorage.getItem("userName");
+            if(!name) return;
 
-            fetch(`${WEB_URL}?name=${encodeURIComponent(userName)}`)
-                .then(response => {
-                    if (!response.ok) throw new Error("Network error");
-                    return response.json();
-                })
+            fetch(`${WEB_URL}?name=${encodeURIComponent(name)}`)
+                .then(res => res.json())
                 .then(data => {
                     let status = data.status;
                     let timestamp = data.timestamp;
@@ -173,23 +162,19 @@
                             sendToThunkable("GOTO_GAME");
                         }
                     } else {
-                        document.getElementById("timerMsg").innerText = "एडमिन द्वारा अप्रूवल बाकी है...";
+                        document.getElementById("timerMsg").innerText = "एडमिन द्वारा अभी अप्रूव नहीं हुआ है।";
                     }
                 })
                 .catch(err => {
-                    console.error(err);
-                    document.getElementById("statusMsg").innerHTML = "<b>Status:</b> कनेक्शन त्रुटि!";
-                    document.getElementById("timerMsg").innerText = "पुनः प्रयास जारी है...";
+                    console.log("Checking status...");
                 });
         }
 
-        // हर 4 सेकंड में ऑटोमैटिक स्टेटस चेक (केवल तब जब नाम और UTR दर्ज हो चुके हों)
-        setInterval(function() {
-            if(localStorage.getItem("userName") && localStorage.getItem("utrNumber")) {
-                checkPaymentStatus();
+        function sendToThunkable(action) {
+            if (window.ReactNativeWebView) {
+                window.ReactNativeWebView.postMessage(action);
             }
-        }, 4000);
+        }
     </script>
-
 </body>
 </html>
