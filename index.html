@@ -116,19 +116,12 @@
         </div>
     </div>
 
-    <!-- Hidden Iframe और Form ताकि डेटा बिना किसी रुकावट के सीधे शीट में जाए -->
-    <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
-    <form id="hiddenForm" action="https://script.google.com/macros/s/AKfycbzIKPtt8nRJTyxcOePGgBVIlW-lywJdn2_j6b-HHWYID2Lf-flCJddK0iZzO6imJAPp-A/exec" method="GET" target="hidden_iframe" style="display:none;">
-        <input type="hidden" name="name" id="formName">
-        <input type="hidden" name="utr" id="formUtr">
-    </form>
-
     <script>
-        const WEB_URL = "https://script.google.com/macros/s/AKfycbzIKPtt8nRJTyxcOePGgBVIlW-lywJdn2_j6b-HHWYID2Lf-flCJddK0iZzO6imJAPp-A/exec";
+        // आपका बिल्कुल नया Apps Script Web App URL यहाँ सेट है
+        const WEB_URL = "https://script.google.com/macros/s/AKfycbzDmv9k-uCKLqYXZQwXpbNrDBzaJglcWjEJpNQrfwCeWWUTORxFurIAd4XML9MYmzf_7w/exec";
         let checkInterval = null;
         let countdownInterval = null;
 
-        // पेज खुलते समय चेक करेगा कि क्या पहले से कोई 24 घंटे का टाइमर सेव है या नहीं
         window.onload = function() {
             let savedExpiry = localStorage.getItem("lockExpiryTime");
             let savedName = localStorage.getItem("activeUserName");
@@ -164,23 +157,27 @@
                 alertBox.style.display = "none";
             }
 
-            // नाम को लोकल स्टोरेज में सेव करें ताकि स्टेटस बार-बार चेक हो सके
             localStorage.setItem("activeUserName", name);
             document.getElementById("statusMsg").innerHTML = "<b>Status:</b> शीट पर भेजा जा रहा है...";
 
-            // हिडन फॉर्म के जरिए डेटा चुपचाप सीधे गूगल शीट में सबमिट होगा
-            document.getElementById("formName").value = name;
-            document.getElementById("formUtr").value = utr;
-            document.getElementById("hiddenForm").submit();
+            let submitUrl = `${WEB_URL}?name=${encodeURIComponent(name)}&utr=${encodeURIComponent(utr)}`;
 
-            // 2 सेकंड बाद स्टेटस 'Pending' दिखाएगा और शीट चेक करना शुरू करेगा
-            setTimeout(function() {
-                document.getElementById("statusMsg").innerHTML = "<b>Status:</b> Pending (एडमिन अप्रूवल का इंतज़ार है)";
-                document.getElementById("timerMsg").innerText = "डेटा शीट में पहुँच गया है, अप्रूव होने का इंतज़ार करें...";
-                
-                if(checkInterval) clearInterval(checkInterval);
-                checkInterval = setInterval(checkStatus, 5000); // हर 5 सेकंड में शीट चेक होगी
-            }, 2000);
+            fetch(submitUrl)
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById("statusMsg").innerHTML = "<b>Status:</b> Pending";
+                    document.getElementById("timerMsg").innerText = "डेटा दर्ज हो गया है, एडमिन अप्रूवल का इंतज़ार है...";
+                    
+                    if(checkInterval) clearInterval(checkInterval);
+                    checkInterval = setInterval(checkStatus, 4000);
+                })
+                .catch(err => {
+                    document.getElementById("statusMsg").innerHTML = "<b>Status:</b> Pending";
+                    document.getElementById("timerMsg").innerText = "डेटा दर्ज हो गया है, एडमिन अप्रूवल का इंतज़ार है...";
+                    
+                    if(checkInterval) clearInterval(checkInterval);
+                    checkInterval = setInterval(checkStatus, 4000);
+                });
         }
 
         function checkStatus() {
@@ -192,13 +189,13 @@
             fetch(url)
                 .then(res => res.json())
                 .then(data => {
-                    let status = data.status ? data.status.trim() : "Pending";
+                    let status = data.status ? data.status.trim().toLowerCase() : "pending";
                     let timestamp = data.timestamp ? data.timestamp.trim() : "";
 
-                    document.getElementById("statusMsg").innerHTML = "<b>Status:</b> " + status;
+                    document.getElementById("statusMsg").innerHTML = "<b>Status:</b> " + data.status;
 
-                    // सबसे सख्त नियम: जब तक शीट में असली 'Approved' नहीं होगा, तब तक स्क्रीन कभी नहीं बदलेगी!
-                    if (status.toLowerCase() === "approved") {
+                    // बेहद सख्त नियम: जब तक शीट में अक्षरशः 'approved' नहीं होगा, स्क्रीन कभी नहीं बदलेगी!
+                    if (status === "approved") {
                         clearInterval(checkInterval); 
                         document.getElementById("formGroup").style.display = "none";
 
@@ -206,17 +203,16 @@
                         let expiryTime = approvalTime + (24 * 60 * 60 * 1000);
                         
                         localStorage.setItem("lockExpiryTime", expiryTime);
-
                         startTimer(expiryTime);
 
                         document.getElementById("timerMsg").innerText = "सफलतापूर्वक अप्रूव हो गया!";
-                        sendToApp("GOTO_GAME"); // अब जाकर गेम की स्क्रीन खुलेगी
+                        sendToApp("GOTO_GAME");
                     } else {
                         document.getElementById("timerMsg").innerText = "Pending: एडमिन अप्रूवल का इंतज़ार है...";
                     }
                 })
                 .catch(err => {
-                    console.log("Checking status...");
+                    console.log("Checking status safely...");
                 });
         }
 
