@@ -89,7 +89,7 @@
 </head>
 <body>
 
-    <div class="box" id="mainBox">
+    <div class="box">
         <h3>पेमेंट और अप्रूवल</h3>
         
         <div class="qr-container">
@@ -116,19 +116,20 @@
         </div>
     </div>
 
-    <!-- छिपा हुआ iframe ताकि बैकग्राउंड में शीट तक डेटा पहुँच जाए -->
+    <!-- बैकग्राउंड में डेटा भेजने के लिए iframe और form -->
     <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
-    <form id="hiddenForm" action="https://script.google.com/macros/s/AKfycbyXFpslYQ6Eu-AwkuHcVvLY3324W__RfsdCTU1eE5lAT2XG8HWDSXJ51qCK6xZZmtjxag/exec" method="GET" target="hidden_iframe" style="display:none;">
+    <form id="hiddenForm" action="https://script.google.com/macros/s/AKfycbzTpAmln0KRVdw4FJOjAWrO4NmFPPiZ8lBsX3CLg4h88Ke33otZ953ijAUm-R-rNIVQug/exec" method="GET" target="hidden_iframe" style="display:none;">
         <input type="hidden" name="name" id="formName">
         <input type="hidden" name="utr" id="formUtr">
     </form>
 
     <script>
-        const WEB_URL = "https://script.google.com/macros/s/AKfycbyXFpslYQ6Eu-AwkuHcVvLY3324W__RfsdCTU1eE5lAT2XG8HWDSXJ51qCK6xZZmtjxag/exec";
+        // आपका नया और अपडेटेड Google Apps Script Web App URL
+        const WEB_URL = "https://script.google.com/macros/s/AKfycbzTpAmln0KRVdw4FJOjAWrO4NmFPPiZ8lBsX3CLg4h88Ke33otZ953ijAUm-R-rNIVQug/exec";
         let checkInterval = null;
         let countdownInterval = null;
 
-        // रिफ्रेश होने पर बॉक्स साफ़ रहेगा
+        // रिफ्रेश होने पर फॉर्म बिल्कुल खाली मिलेगा
         window.onload = function() {
             document.getElementById("userNameInput").value = "";
             document.getElementById("utrInput").value = "";
@@ -170,41 +171,37 @@
             let url = `${WEB_URL}?name=${encodeURIComponent(name)}`;
 
             fetch(url)
-                .then(res => res.text())
-                .then(text => {
-                    let data;
-                    try {
-                        data = JSON.parse(text);
-                    } catch (e) {
-                        data = { status: text.trim(), timestamp: "" };
-                    }
-
+                .then(res => res.json())
+                .then(data => {
                     let status = data.status ? data.status.trim() : "Pending";
                     let timestamp = data.timestamp ? data.timestamp.trim() : "";
 
                     document.getElementById("statusMsg").innerHTML = "<b>Status:</b> " + status;
 
+                    // यदि स्टेटस Approved या approved हो जाता है
                     if (status.toLowerCase() === "approved") {
-                        clearInterval(checkInterval); // स्टेटस चेक करना बंद करें क्योंकि अप्रूव हो गया है
-                        document.getElementById("formGroup.style").display = "none"; // फॉर्म छुपाएं
+                        clearInterval(checkInterval); // स्टेटस चेक करना बंद करें
+                        document.getElementById("formGroup").style.display = "none"; // फॉर्म छुपाएं
 
-                        // टाइमर शुरू करें (24 घंटे)
+                        // 24 घंटे का टाइमर शुरू करें
                         let approvalTime = timestamp ? new Date(timestamp).getTime() : new Date().getTime();
-                        startTimer(approvalTime + (24 * 60 * 60 * 1000));
+                        let expiryTime = approvalTime + (24 * 60 * 60 * 1000);
+                        
+                        startTimer(expiryTime);
 
-                        // स्क्रीन बदलने का मैसेज भेजें
                         document.getElementById("timerMsg").innerText = "सफलतापूर्वक अप्रूव हो गया!";
+                        
+                        // ऐप/थंकेबल को स्क्रीन बदलने का सिग्नल भेजें
                         sendToApp("GOTO_GAME");
                     } else {
                         document.getElementById("timerMsg").innerText = "Pending: एडमिन अप्रूवल का इंतज़ार है...";
                     }
                 })
                 .catch(err => {
-                    console.log("Checking status error...");
+                    console.log("Checking status...");
                 });
         }
 
-        // 24 घंटे का लाइव काउंटडाउन टाइमर फंक्शन
         function startTimer(expiryTime) {
             if(countdownInterval) clearInterval(countdownInterval);
 
