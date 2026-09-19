@@ -3,87 +3,192 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment & Game Lock</title>
+    <title>Payment & UTR Verification</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f4f9;
             text-align: center;
-            padding: 50px;
+            padding-top: 15px;
             color: #333;
+            margin: 0;
         }
-        .container {
+        .box {
             background: #fff;
-            padding: 20px;
+            padding: 15px;
             border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             display: inline-block;
+            width: 85%;
+            max-width: 320px;
         }
-        h3 { color: #007BFF; }
+        h3 { color: #007BFF; margin-bottom: 5px; font-size: 16px; }
+        p { font-size: 12px; color: #555; margin: 6px 0; }
+        .qr-container img {
+            width: 150px;
+            height: 150px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            margin-top: 5px;
+        }
+        .input-group {
+            margin-top: 10px;
+            text-align: left;
+        }
+        label { font-size: 11px; font-weight: bold; color: #444; }
+        input {
+            width: 100%;
+            padding: 6px;
+            margin-top: 3px;
+            margin-bottom: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 13px;
+        }
+        button:hover { background-color: #0056b3; }
+        #statusBox {
+            margin-top: 10px;
+            padding: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .error-msg {
+            color: red;
+            font-size: 11px;
+            margin-bottom: 5px;
+            display: none;
+        }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h3 id="statusText">स्टेटس चेक किया जा रहा है...</h3>
-        <p id="timerText"></p>
+    <div class="box">
+        <h3 id="mainTitle">भुगतान और UTR सत्यापन</h3>
+        
+        <!-- QR कोड सेक्शन -->
+        <div class="qr-container">
+            <p><b>QR कोड स्कैन करें:</b></p>
+            <img src="https://i.ibb.co/20nfkZzS/qr-image.jpg" alt="Payment QR Code">
+        </div>
+
+        <!-- यूजर इनपुट (नाम और UTR) -->
+        <div class="input-group">
+            <label>आपका नाम (Name):</label>
+            <input type="text" id="userNameInput" placeholder="नाम दर्ज करें">
+            
+            <label>UTR नंबर:</label>
+            <input type="text" id="utrInput" placeholder="UTR नंबर दर्ज करें">
+            
+            <div id="errorText" class="error-msg">कृपया नाम और UTR दोनों दर्ज करना अनिवार्य है!</div>
+            
+            <button onclick="saveDetails()">डिटेल्स सबमिट करें</button>
+        </div>
+
+        <!-- स्टेटस और टाइमर बॉक्स -->
+        <div id="statusBox">
+            <p id="statusMsg"><b>Status:</b> कृपया डिटेल्स भरकर सबमिट करें</p>
+            <p id="timerMsg">प्रतीक्षा की जा रही है...</p>
+        </div>
     </div>
 
     <script>
-        // यहाँ आपका दिया गया Google Apps Script Web App URL है
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby49-NodUjFEF8CeJpJPGbNXYvBBqqLgfXb_Tqp99fOsnxiWtsP8xT1WaukEscKQ5TODg/exec";
-        
-        // यूजर का नाम (इसे थंकेबल से पास किया जा सकता है या लोकल स्टोरेज से लिया जा सकता है)
-        // अभी के लिए इसे डायनामिक या टेस्ट नेम पर सेट कर सकते हैं
-        const userName = localStorage.getItem("userName") || "User1"; 
+        const WEB_URL = "https://script.google.com/macros/s/AKfycbyGcTv1TZ45PFwuEw4i-7kUDY6QMdCuyAjPzQRlAa4n-0X3jwS3tTBMrxASW7Kp_SgJMw/exec";
 
-        function checkStatus() {
-            fetch(`${WEB_APP_URL}?name=${encodeURIComponent(userName)}`)
-                .then(response => response.json())
-                .then(data => {
-                    let status = data.status;
-                    let timestampStr = data.timestamp;
-
-                    document.getElementById("statusText").innerText = "Status: " + status;
-
-                    if (status.toLowerCase() === "approved") {
-                        if (timestampStr) {
-                            let approvalTime = new Date(timestampStr).getTime();
-                            let currentTime = new Date().getTime();
-                            let hoursElapsed = (currentTime - approvalTime) / (1000 * 60 * 60);
-
-                            if (hoursElapsed < 24) {
-                                document.getElementById("timerText").innerText = "24 घंटे का लॉक सक्रिय है। गेम पर रीडायरेक्ट हो रहा है...";
-                                
-                                // थंकेबल को स्क्रीन बदलने का सिग्नल भेजना (window.ReactNativeWebView या PostMessage के जरिए)
-                                sendDataToThunkable("GOTO_GAME_SCREEN");
-                            } else {
-                                document.getElementById("timerText").innerText = "24 घंटे पूरे हो चुके हैं। कृपया पुनः भुगतान करें।";
-                                sendDataToThunkable("GOTO_PAYMENT_SCREEN");
-                            }
-                        } else {
-                            // अगर टाइमस्टैम्प नहीं है लेकिन अप्रूव्ड है
-                            sendDataToThunkable("GOTO_GAME_SCREEN");
-                        }
-                    } else {
-                        document.getElementById("timerText").innerText = "कृपया एडमिन की स्वीकृति (Approval) की प्रतीक्षा करें...";
-                    }
-                })
-                .catch(error => {
-                    console.error("Error fetching data:", error);
-                    document.getElementById("statusText").innerText = "कनेक्शन त्रुटि। पुनः प्रयास कर रहा है...";
-                });
-        }
-
-        function sendDataToThunkable(action) {
-            if (window.ReactNativeWebView) {
-                window.ReactNativeWebView.postMessage(action);
+        window.onload = function() {
+            if(localStorage.getItem("userName")) {
+                document.getElementById("userNameInput").value = localStorage.getItem("userName");
+            }
+            if(localStorage.getItem("utrNumber")) {
+                document.getElementById("utrInput").value = localStorage.getItem("utrNumber");
+            }
+            // यदि पहले से नाम और UTR सेव हैं, तो तुरंत स्टेटस चेक शुरू कर दें
+            if(localStorage.getItem("userName") && localStorage.getItem("utrNumber")) {
+                checkPaymentStatus();
             }
         }
 
-        // हर 5 सेकंड में स्टेटस चेक करते रहें
-        setInterval(checkStatus, 5000);
-        checkStatus(); // पहली बार तुरंत रन हो
+        function saveDetails() {
+            let name = document.getElementById("userNameInput").value.trim();
+            let utr = document.getElementById("utrInput").value.trim();
+            let errorBox = document.getElementById("errorText");
+
+            // सख्त जाँच: यदि नाम या UTR खाली है, तो आगे नहीं बढ़ने देगा
+            if(name === "" || utr === "") {
+                errorBox.style.display = "block";
+                return;
+            } else {
+                errorBox.style.display = "none";
+            }
+
+            // लोकल स्टोरेज में सेव करना
+            localStorage.setItem("userName", name);
+            localStorage.setItem("utrNumber", utr);
+            
+            document.getElementById("statusMsg").innerHTML = "<b>Status:</b> डिटेल्स सबमिट हो गई हैं। चेक हो रहा है...";
+            checkPaymentStatus();
+        }
+
+        function checkPaymentStatus() {
+            let userName = document.getElementById("userNameInput").value.trim() || localStorage.getItem("userName") || "";
+            if(!userName) return;
+
+            fetch(`${WEB_URL}?name=${encodeURIComponent(userName)}`)
+                .then(response => {
+                    if (!response.ok) throw new Error("Network error");
+                    return response.json();
+                })
+                .then(data => {
+                    let status = data.status;
+                    let timestamp = data.timestamp;
+
+                    document.getElementById("statusMsg").innerHTML = "<b>Status:</b> " + status;
+
+                    if (status.toLowerCase() === "approved") {
+                        if (timestamp) {
+                            let approvalTime = new Date(timestamp).getTime();
+                            let currentTime = new Date().getTime();
+                            let hoursPassed = (currentTime - approvalTime) / (1000 * 60 * 60);
+
+                            if (hoursPassed < 24) {
+                                document.getElementById("timerMsg").innerText = "24 घंटे का लॉक सक्रिय है। गेम पर जा रहे हैं...";
+                                sendToThunkable("GOTO_GAME");
+                            } else {
+                                document.getElementById("timerMsg").innerText = "24 घंटे पूरे हो चुके हैं। पुनः भुगतान करें।";
+                                sendToThunkable("GOTO_PAYMENT");
+                            }
+                        } else {
+                            document.getElementById("timerMsg").innerText = "अप्रूव हो गया है!";
+                            sendToThunkable("GOTO_GAME");
+                        }
+                    } else {
+                        document.getElementById("timerMsg").innerText = "एडमिन द्वारा अप्रूवल बाकी है...";
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    document.getElementById("statusMsg").innerHTML = "<b>Status:</b> कनेक्शन त्रुटि!";
+                    document.getElementById("timerMsg").innerText = "पुनः प्रयास जारी है...";
+                });
+        }
+
+        // हर 4 सेकंड में ऑटोमैटिक स्टेटस चेक (केवल तब जब नाम और UTR दर्ज हो चुके हों)
+        setInterval(function() {
+            if(localStorage.getItem("userName") && localStorage.getItem("utrNumber")) {
+                checkPaymentStatus();
+            }
+        }, 4000);
     </script>
 
 </body>
