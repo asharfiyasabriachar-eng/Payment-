@@ -1,4 +1,4 @@
-            <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
@@ -57,6 +57,20 @@
             font-size: 13px;
         }
         button:hover { background-color: #0056b3; }
+        
+        /* पेज के अंदर दिखने वाला चेतावनी/एरर मैसेज बॉक्स (पॉप-अप नहीं) */
+        #inlineAlert {
+            color: #d9534f;
+            background-color: #f2dede;
+            border: 1px solid #ebccd1;
+            padding: 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-bottom: 8px;
+            display: none;
+            text-align: center;
+        }
+
         #statusBox {
             margin-top: 10px;
             padding: 8px;
@@ -83,6 +97,9 @@
             <label>UTR नंबर:</label>
             <input type="text" id="utrInput" placeholder="UTR नंबर दर्ज करें">
             
+            <!-- यहाँ पेज के अंदर ही वार्निंग दिखेगी, कोई पॉप-अप नहीं -->
+            <div id="inlineAlert">कृपया अपना नाम और UTR नंबर दोनों दर्ज करना अनिवार्य है!</div>
+            
             <button onclick="submitDetails()">डेटा सबमिट करें</button>
         </div>
 
@@ -93,7 +110,6 @@
     </div>
 
     <script>
-        // आपका नया और अपडेटेड Google Apps Script Web App URL
         const WEB_URL = "https://script.google.com/macros/s/AKfycbzb8iEloYNNGihssFjrIX7IvIJwwICZKy0fUrPZOlPa3OSir9f9Ms0NCylS7-n8j7YMpQ/exec";
 
         window.onload = function() {
@@ -106,16 +122,20 @@
         function submitDetails() {
             let name = document.getElementById("userNameInput").value.trim();
             let utr = document.getElementById("utrInput").value.trim();
+            let alertBox = document.getElementById("inlineAlert");
 
+            // अगर नाम या UTR खाली है, तो पेज के अंदर ही लाल रंग में चेतावनी दिखाएगा
             if(!name || !utr) {
-                alert("नाम और UTR दोनों भरना अनिवार्य है!");
+                alertBox.style.display = "block";
                 return;
+            } else {
+                alertBox.style.display = "none";
             }
 
             localStorage.setItem("userName", name);
             document.getElementById("statusMsg").innerHTML = "<b>Status:</b> गूगल शीट पर भेजा जा रहा है...";
 
-            // डेटा को सीधा गूगल शीट में पोस्ट करना
+            // डेटा को सीधा गूगल शीट में पोस्ट करना (mode: 'no-cors' की वजह से रिस्पॉन्स साइलेंट रहता है, इसलिए हम इसके तुरंत बाद स्टेटस चेकिंग शुरू कर देते हैं)
             fetch(WEB_URL, {
                 method: "POST",
                 mode: "no-cors",
@@ -124,7 +144,7 @@
             })
             .then(() => {
                 document.getElementById("statusMsg").innerHTML = "<b>Status:</b> Pending (एडमिन अप्रूवल का इंतज़ार है)";
-                setInterval(checkStatus, 4000); // 4 सेकंड पर लगातार चेकिंग शुरू
+                setInterval(checkStatus, 4000); // लगातार चेकिंग
             })
             .catch(err => {
                 console.error(err);
@@ -178,3 +198,4 @@
     </script>
 </body>
 </html>
+
