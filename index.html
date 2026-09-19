@@ -72,6 +72,12 @@
             color: #dc3545;
             margin: 15px 0;
         }
+        .error-msg {
+            color: #dc3545;
+            font-size: 14px;
+            margin: 5px 0;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -87,7 +93,8 @@
         
         <input type="text" id="userName" placeholder="अपना पूरा नाम दर्ज करें" required>
         <input type="text" id="utrNumber" placeholder="UTR / Transaction Number दर्ज करें" required>
-        <button onclick="submitDetails()">सबमिट करें</button>
+        <div id="formError" class="error-msg"></div>
+        <button id="submitBtn" onclick="submitDetails()">सबमिट करें</button>
     </div>
 
     <!-- View 2: Pending Approval Screen -->
@@ -95,9 +102,10 @@
         <h2>समीक्षाधीन (Under Review)</h2>
         <div class="status-box">
             <p><strong>Pending</strong></p>
-            <p>एडमिन अप्रूवल का इंतज़ार है। कृपया प्रतीक्षा करें, शीट अप्रूव होते ही पेज स्वतः अपडेट हो जाएगा।</p>
+            <p>एडमिन अप्रूवल का इंतज़ार है। कृपया प्रतीक्षा करें, शीट अप्रूव होते ही स्क्रीन स्वतः बदल जाएगी।</p>
         </div>
-        <button onclick="checkStatus()" style="background-color: #17a2b8; margin-top: 20px;">स्टेटस दोबारा चेक करें</button>
+        <div id="statusError" class="error-msg"></div>
+        <button onclick="checkStatusManually()" style="background-color: #17a2b8; margin-top: 20px;">स्टेटस दोबारा चेक करें</button>
     </div>
 
     <!-- View 3: Game / Access Granted & Timer Screen -->
@@ -112,10 +120,11 @@
 </div>
 
 <script>
-    // आपका सेट किया हुआ Web App URL यहाँ जुड़ा हुआ है
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzab6p70e4sMyHnYZBLLA-AKOC1sKfRUIc1SvIFLgNDolduK-6AgvYn3VHlOZVK8pJdcQ/exec";
+    // आपका नया और सही Web App URL यहाँ जुड़ा हुआ है
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyRwr-mZodfij7Uu4HMw8bbkcWtcFbLPtg9l22WpJPi3kz1ndS9bs-lNosMk4uydGMq0Q/exec";
 
     let timerInterval = null;
+    let pollInterval = null;
 
     window.onload = function() {
         checkLocalSession();
@@ -131,7 +140,6 @@
                 showGameView(savedExpiry);
                 return;
             } else {
-                // 24 घंटे पूरे हो चुके हैं, डेटा साफ़ करें और पेमेंट पेज पर भेजें
                 localStorage.clear();
                 showPaymentView();
                 return;
@@ -139,10 +147,8 @@
         }
 
         if (savedUtr) {
-            // अगर UTR सेव है लेकिन अभी अप्रूव नहीं हुआ था, तो पेंडिंग स्क्रीन दिखाएं
             document.getElementById('paymentView').classList.add('hidden');
             document.getElementById('pendingView').classList.remove('hidden');
-            // बैकग्राउंड में आटोमैटिक स्टेटस चेक शुरू करें
             startAutoPoll(savedUtr);
         }
     }
@@ -150,13 +156,18 @@
     async function submitDetails() {
         const name = document.getElementById('userName').value.trim();
         const utr = document.getElementById('utrNumber').value.trim();
+        const errorDiv = document.getElementById('formError');
+
+        errorDiv.innerText = "";
 
         if (!name || !utr) {
-            alert('कृपया नाम और UTR नंबर दोनों भरें!');
+            errorDiv.innerText = 'कृपया नाम और UTR नंबर दोनों भरें!';
             return;
         }
 
-        document.querySelector('button').innerText = 'सबमिट हो रहा है...';
+        const btn = document.getElementById('submitBtn');
+        btn.innerText = 'सबमिट हो रहा है...';
+        btn.disabled = true;
 
         try {
             let response = await fetch(WEB_APP_URL, {
@@ -176,18 +187,23 @@
                     startAutoPoll(utr);
                 }
             } else {
-                alert('एरर: ' + result.message);
-                document.querySelector('button').innerText = 'सबमिट करें';
+                errorDiv.innerText = 'एरर: ' + result.message;
+                btn.innerText = 'सबमिट करें';
+                btn.disabled = false;
             }
         } catch (error) {
-            alert('नेटवर्क या यूआरएल में गड़बड़ है। कृपया सही Web App URL जांचें।');
-            document.querySelector('button').innerText = 'सबमिट करें';
+            errorDiv.innerText = 'नेटवर्क या सर्वर में समस्या है। कृपया पुनः प्रयास करें।';
+            btn.innerText = 'सबमिट करें';
+            btn.disabled = false;
         }
     }
 
-    async function checkStatus() {
+    async function checkStatusManually() {
         const utr = localStorage.getItem('user_utr');
         if (!utr) return;
+
+        const errorDiv = document.getElementById('statusError');
+        errorDiv.innerText = "जाँच की जा रही है...";
 
         try {
             let response = await fetch(`${WEB_APP_URL}?utr=${utr}`);
@@ -197,27 +213,32 @@
                 if (result.sheetStatus === 'Approved') {
                     handleApproval(result.expiryTime);
                 } else {
-                    alert('आपका स्टेटस अभी भी "Pending" है। कृपया एडमिन द्वारा अप्रूव होने तक प्रतीक्षा करें।');
+                    errorDiv.innerText = 'स्टेटस अभी भी "Pending" है। कृपया प्रतीक्षा करें।';
                 }
+            } else {
+                errorDiv.innerText = 'डेटा नहीं मिला।';
             }
         } catch (e) {
-            console.error('Status check failed', e);
+            errorDiv.innerText = 'कनेक्शन एरर।';
         }
     }
 
     function startAutoPoll(utr) {
-        // हर 10 सेकंड में ऑटोमैटिकली शीट चेक करेगा कि अप्रूवल मिला या नहीं
-        setInterval(async () => {
+        if (pollInterval) clearInterval(pollInterval);
+
+        // हर 5 सेकंड में ऑटोमैटिक चेक करेगा कि एडमिन ने अप्रूव किया या नहीं
+        pollInterval = setInterval(async () => {
             try {
                 let response = await fetch(`${WEB_APP_URL}?utr=${utr}`);
                 let result = await response.json();
                 if (result.status === 'success' && result.sheetStatus === 'Approved') {
+                    clearInterval(pollInterval);
                     handleApproval(result.expiryTime);
                 }
             } catch (e) {
                 console.error('Polling error', e);
             }
-        }, 10000); // 10 seconds interval
+        }, 5000);
     }
 
     function handleApproval(expiryTime) {
@@ -228,6 +249,8 @@
     }
 
     function showGameView(expiryTime) {
+        if (pollInterval) clearInterval(pollInterval);
+
         document.getElementById('paymentView').classList.add('hidden');
         document.getElementById('pendingView').classList.add('hidden');
         document.getElementById('gameView').classList.remove('hidden');
@@ -241,7 +264,6 @@
             if (distance <= 0) {
                 clearInterval(timerInterval);
                 localStorage.clear();
-                alert('आपके 24 घंटे पूरे हो चुके हैं!');
                 showPaymentView();
                 return;
             }
