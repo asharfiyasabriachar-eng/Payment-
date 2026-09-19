@@ -132,13 +132,13 @@
         <h2>समीक्षाधीन (Under Review)</h2>
         <div class="status-box">
             <p><strong>Pending</strong></p>
-            <p>एडमिन अप्रूवल का इंतज़ार है। जैसे ही अप्रूव होगा, कॉइन टॉस स्क्रीन स्वतः खुल जाएगी।</p>
+            <p>एडमिन अप्रूवल का इंतज़ार है। जैसे ही अप्रूव होगा, सीधे कॉइन टॉस स्क्रीन खुल जाएगी।</p>
         </div>
         <div id="statusError" class="error-msg"></div>
         <button onclick="checkStatusManually()" style="background-color: #17a2b8; margin-top: 20px;">स्टेटस दोबारा चेक करें</button>
     </div>
 
-    <!-- View 3: Coin Toss Screen & Background Timer -->
+    <!-- View 3: Coin Toss Screen & Background Timer (केवल यही स्क्रीन खुलेगी अप्रूवल के बाद) -->
     <div id="gameView" class="hidden">
         <h2>🪙 कॉइन टॉस स्क्रीन</h2>
         
@@ -286,12 +286,13 @@
         showGameView(localStorage.getItem('user_expiry'));
     }
 
+    // यह फंक्शन केवल कॉइन टॉस वाली स्क्रीन (gameView) को ऑन करेगा
     function showGameView(expiryTime) {
         if (pollInterval) clearInterval(pollInterval);
 
         document.getElementById('paymentView').classList.add('hidden');
         document.getElementById('pendingView').classList.add('hidden');
-        document.getElementById('gameView').classList.remove('hidden');
+        document.getElementById('gameView').classList.remove('hidden'); // सिर्फ कॉइन टॉस स्क्रीन खुलेगी
 
         if (timerInterval) clearInterval(timerInterval);
 
@@ -309,7 +310,7 @@
             }
 
             const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60 * 1000));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
             const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
             document.getElementById('countdownTimer').innerText = 
@@ -325,7 +326,7 @@
         document.getElementById('paymentView').classList.remove('hidden');
     }
 
-    // कॉइन टॉस करने का छोटा सा लॉजिक (आप चाहें तो अपना वाला कोड यहाँ रख सकते हैं)
+    // कॉइन टॉस करने का लॉजिक
     function tossCoin() {
         const resultText = document.getElementById('tossResult');
         const coin = document.getElementById('coinElement');
