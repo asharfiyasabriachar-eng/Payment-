@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>पेमेंट और अप्रूवल सिस्टम</title>
+    <title>कॉइन टॉस और अप्रूवल सिस्टम</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -21,7 +21,7 @@
             border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             width: 100%;
-            max-width: 400px;
+            max-width: 450px;
             text-align: center;
         }
         h2 { color: #333; margin-bottom: 20px; }
@@ -59,18 +59,48 @@
             border-radius: 6px;
             margin-top: 15px;
         }
-        .game-box {
+        
+        /* कॉइन टॉस स्क्रीन का डिज़ाइन */
+        .coin-toss-screen {
+            background: #f8f9fa;
+            border: 2px dashed #007bff;
             padding: 20px;
-            background: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        .coin {
+            width: 100px;
+            height: 100px;
+            background-color: #ffc107;
+            border-radius: 50%;
+            margin: 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .toss-btn {
+            background-color: #007bff;
+        }
+        .toss-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .timer-box {
+            background: #e2f0cb;
+            padding: 10px;
             border-radius: 6px;
+            border: 1px solid #b5e28c;
+            text-align: center;
         }
         .timer {
             font-size: 22px;
             font-weight: bold;
-            color: #dc3545;
-            margin: 15px 0;
+            color: #d90429;
+            margin-top: 5px;
         }
         .error-msg {
             color: #dc3545;
@@ -102,25 +132,34 @@
         <h2>समीक्षाधीन (Under Review)</h2>
         <div class="status-box">
             <p><strong>Pending</strong></p>
-            <p>एडमिन अप्रूवल का इंतज़ार है। कृपया प्रतीक्षा करें, शीट अप्रूव होते ही स्क्रीन स्वतः बदल जाएगी।</p>
+            <p>एडमिन अप्रूवल का इंतज़ार है। जैसे ही अप्रूव होगा, कॉइन टॉस स्क्रीन स्वतः खुल जाएगी।</p>
         </div>
         <div id="statusError" class="error-msg"></div>
         <button onclick="checkStatusManually()" style="background-color: #17a2b8; margin-top: 20px;">स्टेटस दोबारा चेक करें</button>
     </div>
 
-    <!-- View 3: Game / Access Granted & Timer Screen -->
+    <!-- View 3: Coin Toss Screen & Background Timer -->
     <div id="gameView" class="hidden">
-        <h2>स्वागत है! गेम चालू है</h2>
-        <div class="game-box">
-            <p>आपका भुगतान सफल और स्वीकृत हो गया है।</p>
-            <p>शेष समय (24 घंटे का टाइमर):</p>
+        <h2>🪙 कॉइन टॉस स्क्रीन</h2>
+        
+        <!-- कॉइन टॉस का मुख्य एरिया -->
+        <div class="coin-toss-screen">
+            <p>आपका पेमेंट स्वीकृत हो गया है! अब आप कॉइन टॉस खेल सकते हैं।</p>
+            <div id="coinElement" class="coin">COIN</div>
+            <button class="toss-btn" onclick="tossCoin()">टॉस करें (Toss)</button>
+            <p id="tossResult" style="margin-top: 10px; font-weight: bold; color: #333;"></p>
+        </div>
+
+        <!-- 24 घंटे का बैकग्राउंड टाइमर बॉक्स -->
+        <div class="timer-box">
+            <p style="margin: 0; font-size: 13px; color: #555;">एक्सेस समाप्त होने में बचा समय:</p>
             <div id="countdownTimer" class="timer">24:00:00</div>
         </div>
     </div>
 </div>
 
 <script>
-    // नया सेट किया हुआ Web App URL
+    // आपका Web App URL यहाँ सेट है
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzr2TXZvKa4gKYClEb9_nCJCGEMNJi1GTpskoMFdvjkI65nXTed1Q_G_4AgoMUc6Qn7ow/exec";
 
     let timerInterval = null;
@@ -226,7 +265,6 @@
     function startAutoPoll(utr) {
         if (pollInterval) clearInterval(pollInterval);
 
-        // हर 5 सेकंड में ऑटोमैटिक चेक करेगा कि अप्रूवल मिला या नहीं
         pollInterval = setInterval(async () => {
             try {
                 let response = await fetch(`${WEB_APP_URL}?utr=${encodeURIComponent(utr)}`);
@@ -257,6 +295,7 @@
 
         if (timerInterval) clearInterval(timerInterval);
 
+        // 24 घंटे का बैकग्राउंड टाइमर
         timerInterval = setInterval(() => {
             const now = new Date().getTime();
             const distance = parseInt(expiryTime) - now;
@@ -264,6 +303,7 @@
             if (distance <= 0) {
                 clearInterval(timerInterval);
                 localStorage.clear();
+                alert('आपके 24 घंटे पूरे हो चुके हैं। अब दोबारा पेमेंट पेज खुलेगा।');
                 showPaymentView();
                 return;
             }
@@ -283,6 +323,26 @@
         document.getElementById('gameView').classList.add('hidden');
         document.getElementById('pendingView').classList.add('hidden');
         document.getElementById('paymentView').classList.remove('hidden');
+    }
+
+    // कॉइन टॉस करने का छोटा सा लॉजिक (आप चाहें तो अपना वाला कोड यहाँ रख सकते हैं)
+    function tossCoin() {
+        const resultText = document.getElementById('tossResult');
+        const coin = document.getElementById('coinElement');
+        
+        coin.innerText = "Tossing...";
+        resultText.innerText = "";
+
+        setTimeout(() => {
+            const random = Math.random();
+            if (random < 0.5) {
+                coin.innerText = "HEADS";
+                resultText.innerText = "नतीजा: हेड (Heads आया!)";
+            } else {
+                coin.innerText = "TAILS";
+                resultText.innerText = "नतीजा: टेल (Tails आया!)";
+            }
+        }, 600);
     }
 </script>
 
