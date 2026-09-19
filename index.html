@@ -120,8 +120,8 @@
 </div>
 
 <script>
-    // आपका नया और सही Web App URL यहाँ जुड़ा हुआ है
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyRwr-mZodfij7Uu4HMw8bbkcWtcFbLPtg9l22WpJPi3kz1ndS9bs-lNosMk4uydGMq0Q/exec";
+    // नया सेट किया हुआ Web App URL
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzr2TXZvKa4gKYClEb9_nCJCGEMNJi1GTpskoMFdvjkI65nXTed1Q_G_4AgoMUc6Qn7ow/exec";
 
     let timerInterval = null;
     let pollInterval = null;
@@ -179,7 +179,7 @@
             if (result.status === 'success') {
                 localStorage.setItem('user_utr', utr);
                 
-                if (result.sheetStatus === 'Approved') {
+                if (result.sheetStatus && result.sheetStatus.toLowerCase() === 'approved') {
                     handleApproval(result.expiryTime);
                 } else {
                     document.getElementById('paymentView').classList.add('hidden');
@@ -192,7 +192,7 @@
                 btn.disabled = false;
             }
         } catch (error) {
-            errorDiv.innerText = 'नेटवर्क या सर्वर में समस्या है। कृपया पुनः प्रयास करें।';
+            errorDiv.innerText = 'नेटवर्क या सर्वर में समस्या है। पुनः प्रयास करें।';
             btn.innerText = 'सबमिट करें';
             btn.disabled = false;
         }
@@ -206,14 +206,14 @@
         errorDiv.innerText = "जाँच की जा रही है...";
 
         try {
-            let response = await fetch(`${WEB_APP_URL}?utr=${utr}`);
+            let response = await fetch(`${WEB_APP_URL}?utr=${encodeURIComponent(utr)}`);
             let result = await response.json();
 
             if (result.status === 'success') {
-                if (result.sheetStatus === 'Approved') {
+                if (result.sheetStatus && result.sheetStatus.toLowerCase() === 'approved') {
                     handleApproval(result.expiryTime);
                 } else {
-                    errorDiv.innerText = 'स्टेटस अभी भी "Pending" है। कृपया प्रतीक्षा करें।';
+                    errorDiv.innerText = 'स्टेटस अभी भी "Pending" है।';
                 }
             } else {
                 errorDiv.innerText = 'डेटा नहीं मिला।';
@@ -226,12 +226,12 @@
     function startAutoPoll(utr) {
         if (pollInterval) clearInterval(pollInterval);
 
-        // हर 5 सेकंड में ऑटोमैटिक चेक करेगा कि एडमिन ने अप्रूव किया या नहीं
+        // हर 5 सेकंड में ऑटोमैटिक चेक करेगा कि अप्रूवल मिला या नहीं
         pollInterval = setInterval(async () => {
             try {
-                let response = await fetch(`${WEB_APP_URL}?utr=${utr}`);
+                let response = await fetch(`${WEB_APP_URL}?utr=${encodeURIComponent(utr)}`);
                 let result = await response.json();
-                if (result.status === 'success' && result.sheetStatus === 'Approved') {
+                if (result.status === 'success' && result.sheetStatus && result.sheetStatus.toLowerCase() === 'approved') {
                     clearInterval(pollInterval);
                     handleApproval(result.expiryTime);
                 }
