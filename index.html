@@ -3,382 +3,192 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>कॉइन टॉस और बैकग्राउंड टाइमर सिस्टम</title>
+    <title>Payment & Approval Screen</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f7f6;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
             margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            overflow: hidden;
         }
-        .container {
-            background: #ffffff;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 450px;
+        .card {
+            background: rgba(30, 41, 59, 0.95);
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6);
+            width: 340px;
             text-align: center;
+            border: 2px solid #facc15;
         }
-        h2 { color: #333; margin-bottom: 20px; }
-        .qr-box img {
-            width: 200px;
-            height: 200px;
-            border-radius: 8px;
-            border: 2px solid #ddd;
-            margin-bottom: 15px;
-        }
-        input, button {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            font-size: 16px;
-            box-sizing: border-box;
-        }
-        button {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background 0.3s;
-        }
-        button:hover { background-color: #218838; }
-        .hidden { display: none !important; }
-        .status-box {
-            padding: 20px;
-            background: #fff3cd;
-            border: 1px solid #ffeeba;
-            color: #856404;
-            border-radius: 6px;
-            margin-top: 15px;
-        }
-        
-        .coin-toss-screen {
-            background: #f8f9fa;
-            border: 2px dashed #007bff;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-        }
-        .coin {
-            width: 100px;
-            height: 100px;
-            background-color: #ffc107;
-            border-radius: 50%;
-            margin: 20px auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            font-weight: bold;
-            color: #333;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-        .toss-btn {
-            background-color: #007bff;
-        }
-        .toss-btn:hover {
-            background-color: #0056b3;
-        }
-
-        .timer-box {
-            background: #e2f0cb;
+        h2 { color: #facc15; margin-bottom: 10px; }
+        .qr-box {
+            background: #fff;
             padding: 10px;
-            border-radius: 6px;
-            border: 1px solid #b5e28c;
+            border-radius: 10px;
+            display: inline-block;
+            margin: 10px 0;
+        }
+        .qr-box img {
+            width: 150px;
+            height: 150px;
+            object-fit: contain;
+        }
+        input[type="text"] {
+            width: 90%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 2px solid #facc15;
+            background: #020617;
+            color: #fff;
+            border-radius: 8px;
             text-align: center;
-        }
-        .timer {
-            font-size: 22px;
-            font-weight: bold;
-            color: #d90429;
-            margin-top: 5px;
-        }
-        .error-msg {
-            color: #dc3545;
             font-size: 14px;
-            margin: 5px 0;
-            font-weight: bold;
+            outline: none;
         }
+        .action-btn {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: #fff;
+            border: none;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 5px;
+            box-shadow: 0 4px 10px rgba(34, 197, 94, 0.4);
+        }
+        .msg {
+            font-size: 13px;
+            font-weight: bold;
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 6px;
+        }
+        #timerSection { display: none; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <!-- View 1: Payment & Submission Form -->
-    <div id="paymentView">
+    <div class="card">
         <h2>भुगतान करें (Payment)</h2>
+        <p style="font-size: 12px; color: #94a3b8;">नीचे दिए गए QR कोड पर स्कैन करके पेमेंट करें और UTR नंबर दर्ज करें।</p>
+
+        <!-- QR कोड इमेज -->
         <div class="qr-box">
-            <img src="https://i.ibb.co/20nfkZzS/qr-image.jpg" alt="QR Code">
-        </div>
-        <p style="font-size: 14px; color: #666;">QR कोड को स्कैन करके पेमेंट करें और नीचे विवरण भरें।</p>
-        
-        <input type="text" id="userName" placeholder="अपना पूरा नाम दर्ज करें" required>
-        <input type="text" id="utrNumber" placeholder="UTR / Transaction Number दर्ज करें" required>
-        <div id="formError" class="error-msg"></div>
-        <button id="submitBtn" onclick="submitDetails()">सबमिट करें</button>
-    </div>
-
-    <!-- View 2: Pending Approval Screen -->
-    <div id="pendingView" class="hidden">
-        <h2>समीक्षाधीन (Under Review)</h2>
-        <div class="status-box">
-            <p><strong>Pending</strong></p>
-            <p>एडमिन अप्रूवल का इंतज़ार है। जैसे ही गूगल शीट से अप्रूव होगा, स्क्रीन स्वतः बदल जाएगी।</p>
-        </div>
-        <div id="statusError" class="error-msg"></div>
-        <button onclick="checkStatusManually()" style="background-color: #17a2b8; margin-top: 15px;">स्टेटस दोबारा चेक करें</button>
-        <button onclick="resetApp()" style="background-color: #6c757d; margin-top: 5px; font-size: 13px; padding: 8px;">डेटा रीसेट करें (Reset)</button>
-    </div>
-
-    <!-- View 3: Coin Toss Screen & Background Real-time Timer -->
-    <div id="gameView" class="hidden">
-        <h2>🪙 कॉइन टॉस स्क्रीन</h2>
-        
-        <div class="coin-toss-screen">
-            <p>आपका पेमेंट स्वीकृत हो गया है! अब आप कॉइन टॉस खेल सकते हैं.</p>
-            <div id="coinElement" class="coin">COIN</div>
-            <button class="toss-btn" onclick="tossCoin()">टॉस करें (Toss)</button>
-            <p id="tossResult" style="margin-top: 10px; font-weight: bold; color: #333;"></p>
+            <img src="https://i.ibb.co/W474r907/qr-code.png" alt="QR Code">
         </div>
 
-        <div class="timer-box">
-            <p style="margin: 0; font-size: 13px; color: #555;">एक्सेस समाप्त होने में बचा समय:</p>
-            <div id="countdownTimer" class="timer">24:00:00</div>
+        <!-- UTR फॉर्म स्क्रीन -->
+        <div id="paymentFormSection">
+            <input type="text" id="utrInput" placeholder="12 अंकों का UTR नंबर दर्ज करें">
+            <button class="action-btn" onclick="submitUTR()">UTR जमा करें</button>
+            <div id="statusMsg" class="msg"></div>
+        </div>
+
+        <!-- पेंडिंग / टाइमर स्क्रीन -->
+        <div id="timerSection">
+            <div id="infoMessage" class="msg" style="background: rgba(234, 179, 8, 0.2); color: #fde047;"></div>
+            <h3 id="countdownDisplay" style="color: #4ade80; font-size: 22px; margin: 15px 0;">--:--:--</h3>
         </div>
     </div>
-</div>
 
-<script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzr2TXZvKa4gKYClEb9_nCJCGEMNJi1GTpskoMFdvjkI65nXTed1Q_G_4AgoMUc6Qn7ow/exec";
+    <!-- डेटा भेजने के लिए फॉर्म -->
+    <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
+    <form id="dataForm" action="https://script.google.com/macros/s/AKfycbzjGj8xM0Gmhh9Ky1lqbJAIVVwhbCdRJBR8U_NW-gDP0Vg6vmKZhuC4bh0rW7slpRHW-w/exec" method="POST" target="hidden_iframe" style="display:none;">
+        <input type="text" name="playerName" id="formPlayerName">
+        <input type="text" name="utr" id="formUtr">
+        <input type="text" name="status" id="formStatus">
+    </form>
 
-    let timerInterval = null;
-    let pollInterval = null;
+    <script>
+        let scriptURL = "https://script.google.com/macros/s/AKfycbzjGj8xM0Gmhh9Ky1lqbJAIVVwhbCdRJBR8U_NW-gDP0Vg6vmKZhuC4bh0rW7slpRHW-w/exec";
+        let playerName = localStorage.getItem("mine_player_name") || "User_" + Math.floor(Math.random() * 1000);
+        localStorage.setItem("mine_player_name", playerName);
 
-    window.onload = function() {
-        checkLocalSession();
-    };
+        // पेज खुलते ही शीट चेक करेगा
+        window.onload = function() {
+            checkUserStatus();
+            setInterval(checkUserStatus, 10000); // हर 10 सेकंड में ऑटो-चेक करेगा
+        };
 
-    async function checkLocalSession() {
-        const savedUtr = localStorage.getItem('user_utr');
-        const savedExpiry = localStorage.getItem('user_expiry');
-
-        // यदि पहले से टाइमर/एक्सेस चालू है और समय बचा है
-        if (savedExpiry) {
-            const timeLeft = parseInt(savedExpiry) - new Date().getTime();
-            if (timeLeft > 0) {
-                showGameView(savedExpiry);
-                sendSignalToThunkable("GOTO_COIN_TOSS");
-                return;
-            } else {
-                // समय खत्म हो गया है
-                localStorage.clear();
-                showPaymentView();
-                sendSignalToThunkable("GOTO_PAYMENT");
+        function submitUTR() {
+            let utr = document.getElementById("utrInput").value.trim();
+            if(!utr) {
+                let msgBox = document.getElementById("statusMsg");
+                msgBox.style.color = "#f87171";
+                msgBox.innerText = "कृपया पहले UTR नंबर लिखें!";
                 return;
             }
+
+            document.getElementById("statusMsg").style.color = "#4ade80";
+            document.getElementById("statusMsg").innerText = "UTR दर्ज हो गया! अब अप्रूवल का इंतजार करिए...";
+
+            // डेटा गूगल शीट में भेजें (Pending स्टेटस के साथ)
+            document.getElementById("formPlayerName").value = playerName;
+            document.getElementById("formUtr").value = utr;
+            document.getElementById("formStatus").value = "Pending";
+            document.getElementById("dataForm").submit();
+
+            setTimeout(switchToWaitingMode, 1500);
         }
 
-        // यदि UTR सेव है लेकिन अभी तक अप्रूवल नहीं मिला था, तो तुरंत गूगल शीट से असली स्टेटस चेक करो
-        if (savedUtr) {
-            document.getElementById('paymentView').classList.add('hidden');
-            document.getElementById('pendingView').classList.remove('hidden');
-            
-            // तुरंत एक बार सर्वर से पूछो कि सच में अप्रूव हुआ है या नहीं
-            let isApproved = await verifyStatusFromServer(savedUtr);
-            if (isApproved) {
-                return; // अगर अप्रूव हो चुका होगा तो handleApproval अंदर ही कॉल हो जाएगा
-            }
-
-            // अगर अभी भी पेंडिंग है तो ऑटो-पोलिंग चालू रखो
-            startAutoPoll(savedUtr);
-        }
-    }
-
-    async function submitDetails() {
-        const name = document.getElementById('userName').value.trim();
-        const utr = document.getElementById('utrNumber').value.trim();
-        const errorDiv = document.getElementById('formError');
-
-        errorDiv.innerText = "";
-
-        if (!name || !utr) {
-            errorDiv.innerText = 'कृपया नाम और UTR नंबर दोनों भरें!';
-            return;
+        function switchToWaitingMode() {
+            document.getElementById("paymentFormSection").style.display = "none";
+            document.getElementById("timerSection").style.display = "block";
+            document.getElementById("infoMessage").innerText = "कृपया अप्रूवर का इंतजार करिए। एडमिन के अप्रूव करते ही गेम शुरू हो जाएगा!";
+            document.getElementById("countdownDisplay").style.display = "none";
         }
 
-        const btn = document.getElementById('submitBtn');
-        btn.innerText = 'सबमिट हो रहा है...';
-        btn.disabled = true;
+        function checkUserStatus() {
+            fetch(scriptURL + "?playerName=" + encodeURIComponent(playerName))
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === "Pending") {
+                        switchToWaitingMode();
+                    } 
+                    else if (data.status === "Approved") {
+                        // जैसे ही शीट में Approved हो, 24 घंटे का बैकग्राउंड टाइमर चालू हो जाएगा
+                        start24HourTimer(data.timestamp);
+                    }
+                })
+                .catch(err => console.log(err));
+        }
 
-        try {
-            let response = await fetch(WEB_APP_URL, {
-                method: 'POST',
-                body: JSON.stringify({ name: name, utr: utr })
-            });
-            let result = await response.json();
+        function start24HourTimer(approvalTimeString) {
+            document.getElementById("paymentFormSection").style.display = "none";
+            document.getElementById("timerSection").style.display = "block";
+            document.getElementById("countdownDisplay").style.display = "block";
+            document.getElementById("infoMessage").innerText = "✅ आपका पेमेंट अप्रूव हो गया है! टाइमर:";
 
-            if (result.status === 'success') {
-                localStorage.setItem('user_utr', utr);
-                
-                // कड़ाई से चेक करो कि शीट में स्टेटस "approved" है या नहीं
-                if (result.sheetStatus && result.sheetStatus.toLowerCase().trim() === 'approved') {
-                    handleApproval(result.expiryTime);
+            let approvalTime = new Date(approvalTimeString).getTime();
+            let expiryTime = approvalTime + (24 * 60 * 60 * 1000); // 24 घंटे का समय
+
+            let timerInterval = setInterval(() => {
+                let now = new Date().getTime();
+                let timeLeft = expiryTime - now;
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    localStorage.removeItem("mine_approved_time");
+                    location.reload(); // 24 घंटे बाद वापस पेमेंट स्क्रीन आ जाएगी
                 } else {
-                    document.getElementById('paymentView').classList.add('hidden');
-                    document.getElementById('pendingView').classList.remove('hidden');
-                    startAutoPoll(utr);
+                    let hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    let minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                    let seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+                    document.getElementById("countdownDisplay").innerText = 
+                        hours.toString().padStart(2, '0') + ":" + 
+                        minutes.toString().padStart(2, '0') + ":" + 
+                        seconds.toString().padStart(2, '0');
                 }
-            } else {
-                errorDiv.innerText = 'एरर: ' + result.message;
-                btn.innerText = 'सबमिट करें';
-                btn.disabled = false;
-            }
-        } catch (error) {
-            errorDiv.innerText = 'नेटवर्क या सर्वर में समस्या है। पुनः प्रयास करें।';
-            btn.innerText = 'सबमिट करें';
-            btn.disabled = false;
+            }, 1000);
         }
-    }
-
-    async function verifyStatusFromServer(utr) {
-        try {
-            let response = await fetch(`${WEB_APP_URL}?utr=${encodeURIComponent(utr)}`);
-            let result = await response.json();
-
-            if (result.status === 'success') {
-                if (result.sheetStatus && result.sheetStatus.toLowerCase().trim() === 'approved') {
-                    handleApproval(result.expiryTime);
-                    return true;
-                }
-            }
-        } catch (e) {
-            console.error('Server check error', e);
-        }
-        return false;
-    }
-
-    async function checkStatusManually() {
-        const utr = localStorage.getItem('user_utr');
-        if (!utr) return;
-
-        const errorDiv = document.getElementById('statusError');
-        errorDiv.innerText = "गूगल शीट से जाँच की जा रही है...";
-
-        let approved = await verifyStatusFromServer(utr);
-        if (!approved) {
-            errorDiv.innerText = 'स्टेटस अभी भी "Pending" है। कृपया एडमिन के अप्रूव करने का इंतज़ार करें।';
-        }
-    }
-
-    function startAutoPoll(utr) {
-        if (pollInterval) clearInterval(pollInterval);
-
-        pollInterval = setInterval(async () => {
-            let approved = await verifyStatusFromServer(utr);
-            if (approved) {
-                clearInterval(pollInterval);
-            }
-        }, 5000); // हर 5 सेकंड में गूगल शीट चेक करेगा
-    }
-
-    function handleApproval(expiryTime) {
-        if (pollInterval) clearInterval(pollInterval);
-        
-        let finalExpiry = expiryTime;
-        if (!finalExpiry) {
-            // अगर एक्सपायरी टाइम सर्वर से नहीं आया, तो अपने आप 24 घंटे बाद का समय सेट कर लो
-            finalExpiry = new Date().getTime() + (24 * 60 * 60 * 1000);
-        }
-
-        if (!localStorage.getItem('user_expiry')) {
-            localStorage.setItem('user_expiry', finalExpiry);
-        }
-
-        showGameView(localStorage.getItem('user_expiry'));
-        sendSignalToThunkable("GOTO_COIN_TOSS");
-    }
-
-    function showGameView(expiryTime) {
-        if (pollInterval) clearInterval(pollInterval);
-
-        document.getElementById('paymentView').classList.add('hidden');
-        document.getElementById('pendingView').classList.add('hidden');
-        document.getElementById('gameView').classList.remove('hidden');
-
-        if (timerInterval) clearInterval(timerInterval);
-
-        timerInterval = setInterval(() => {
-            const now = new Date().getTime();
-            const distance = parseInt(expiryTime) - now;
-
-            if (distance <= 0) {
-                clearInterval(timerInterval);
-                localStorage.clear(); 
-                alert('आपके 24 घंटे पूरे हो चुके हैं। अब दोबारा पेमेंट पेज खुलेगा।');
-                showPaymentView();
-                sendSignalToThunkable("GOTO_PAYMENT");
-                return;
-            }
-
-            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-            document.getElementById('countdownTimer').innerText = 
-                String(hours).padStart(2, '0') + ":" + 
-                String(minutes).padStart(2, '0') + ":" + 
-                String(seconds).padStart(2, '0');
-        }, 1000);
-    }
-
-    function showPaymentView() {
-        document.getElementById('gameView').classList.add('hidden');
-        document.getElementById('pendingView').classList.add('hidden');
-        document.getElementById('paymentView').classList.remove('hidden');
-    }
-
-    function resetApp() {
-        if (confirm("क्या आप सारा डेटा साफ़ करके शुरुआत से शुरू करना चाहते हैं?")) {
-            localStorage.clear();
-            location.reload();
-        }
-    }
-
-    function sendSignalToThunkable(action) {
-        if (window.ReactNativeWebView) {
-            window.ReactNativeWebView.postMessage(action);
-        } else if (window.parent) {
-            window.parent.postMessage(action, "*");
-        }
-    }
-
-    function tossCoin() {
-        const resultText = document.getElementById('tossResult');
-        const coin = document.getElementById('coinElement');
-        
-        coin.innerText = "Tossing...";
-        resultText.innerText = "";
-
-        setTimeout(() => {
-            const random = Math.random();
-            if (random < 0.5) {
-                coin.innerText = "HEADS";
-                resultText.innerText = "नतीजा: हेड (Heads आया!)";
-            } else {
-                coin.innerText = "TAILS";
-                resultText.innerText = "नतीजा: टेल (Tails आया!)";
-            }
-        }, 600);
-    }
-</script>
-
+    </script>
 </body>
 </html>
