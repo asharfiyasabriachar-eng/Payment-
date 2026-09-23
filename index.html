@@ -100,21 +100,20 @@
 
     <!-- डेटा भेजने के लिए फॉर्म -->
     <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
-    <form id="dataForm" action="https://script.google.com/macros/s/AKfycbzjGj8xM0Gmhh9Ky1lqbJAIVVwhbCdRJBR8U_NW-gDP0Vg6vmKZhuC4bh0rW7slpRHW-w/exec" method="POST" target="hidden_iframe" style="display:none;">
+    <form id="dataForm" action="https://script.google.com/macros/s/AKfycbzyT6_JCUuj7flYaa2etMoi1owBK8wDlWm6DD8iJ2bqawLT2AvkbWu-HwUq4l32FouNLg/exec" method="POST" target="hidden_iframe" style="display:none;">
         <input type="text" name="playerName" id="formPlayerName">
         <input type="text" name="utr" id="formUtr">
         <input type="text" name="status" id="formStatus">
     </form>
 
     <script>
-        let scriptURL = "https://script.google.com/macros/s/AKfycbzjGj8xM0Gmhh9Ky1lqbJAIVVwhbCdRJBR8U_NW-gDP0Vg6vmKZhuC4bh0rW7slpRHW-w/exec";
+        let scriptURL = "https://script.google.com/macros/s/AKfycbzyT6_JCUuj7flYaa2etMoi1owBK8wDlWm6DD8iJ2bqawLT2AvkbWu-HwUq4l32FouNLg/exec";
         let playerName = localStorage.getItem("mine_player_name") || "User_" + Math.floor(Math.random() * 1000);
         localStorage.setItem("mine_player_name", playerName);
 
-        // पेज खुलते ही शीट चेक करेगा
         window.onload = function() {
             checkUserStatus();
-            setInterval(checkUserStatus, 10000); // हर 10 सेकंड में ऑटो-चेक करेगा
+            setInterval(checkUserStatus, 10000); // हर 10 सेकंड में शीट चेक करेगा
         };
 
         function submitUTR() {
@@ -129,7 +128,6 @@
             document.getElementById("statusMsg").style.color = "#4ade80";
             document.getElementById("statusMsg").innerText = "UTR दर्ज हो गया! अब अप्रूवल का इंतजार करिए...";
 
-            // डेटा गूगल शीट में भेजें (Pending स्टेटस के साथ)
             document.getElementById("formPlayerName").value = playerName;
             document.getElementById("formUtr").value = utr;
             document.getElementById("formStatus").value = "Pending";
@@ -153,7 +151,6 @@
                         switchToWaitingMode();
                     } 
                     else if (data.status === "Approved") {
-                        // जैसे ही शीट में Approved हो, 24 घंटे का बैकग्राउंड टाइमर चालू हो जाएगा
                         start24HourTimer(data.timestamp);
                     }
                 })
@@ -167,7 +164,7 @@
             document.getElementById("infoMessage").innerText = "✅ आपका पेमेंट अप्रूव हो गया है! टाइमर:";
 
             let approvalTime = new Date(approvalTimeString).getTime();
-            let expiryTime = approvalTime + (24 * 60 * 60 * 1000); // 24 घंटे का समय
+            let expiryTime = approvalTime + (24 * 60 * 60 * 1000);
 
             let timerInterval = setInterval(() => {
                 let now = new Date().getTime();
@@ -175,8 +172,7 @@
 
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
-                    localStorage.removeItem("mine_approved_time");
-                    location.reload(); // 24 घंटे बाद वापस पेमेंट स्क्रीन आ जाएगी
+                    location.reload();
                 } else {
                     let hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                     let minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
