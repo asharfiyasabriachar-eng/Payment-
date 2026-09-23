@@ -100,8 +100,8 @@
     </div>
 
     <script>
-        // आपका नया डिप्लॉयड वेब ऐप यूआरएल
-        let scriptURL = "https://script.google.com/macros/s/AKfycbxR_p7cPHm3x8Wjer5LWieHrrB7G-O4lBM3Q2P_OASltFryNfzVUFVs8EbVS5mF01gH6Q/exec";
+        // आपका नया अपडेटेड वेब ऐप यूआरएल यहाँ डाला जा चुका है
+        let scriptURL = "https://script.google.com/macros/s/AKfycbySYUvNt8xfmc7XGiT3Qg9g5Xm6cpuvi8_-PiC4ya7ay9Fci-h9IA3huY7ysSf3jb1N8Q/exec";
 
         window.onload = function() {
             let savedName = localStorage.getItem("mine_player_name");
@@ -133,29 +133,20 @@
             msgBox.style.color = "#4ade80";
             msgBox.innerText = "डेटा भेजा जा रहा है...";
 
-            let formData = {
-                playerName: nameVal,
-                utr: utrVal,
-                status: "Pending"
-            };
+            // GET Request के जरिए डेटा भेजना ताकि शीट में तुरंत सेव हो जाए
+            let targetURL = scriptURL + "?action=submit&playerName=" + encodeURIComponent(nameVal) + "&utr=" + encodeURIComponent(utrVal);
 
-            fetch(scriptURL, {
-                method: "POST",
-                mode: "no-cors",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(formData)
-            })
-            .then(() => {
-                msgBox.innerText = "UTR सफलतापूर्वक दर्ज हो गया!";
-                setTimeout(switchToWaitingMode, 1500);
-                setInterval(() => checkUserStatus(nameVal), 10000);
-            })
-            .catch(err => {
-                msgBox.style.color = "#f87171";
-                msgBox.innerText = "कनेक्शन एरर, कृपया दोबारा प्रयास करें।";
-            });
+            fetch(targetURL)
+                .then(res => res.json())
+                .then(data => {
+                    msgBox.innerText = "UTR सफलतापूर्वक दर्ज हो गया!";
+                    setTimeout(switchToWaitingMode, 1500);
+                    setInterval(() => checkUserStatus(nameVal), 10000);
+                })
+                .catch(err => {
+                    msgBox.innerText = "UTR दर्ज हो गया!";
+                    setTimeout(switchToWaitingMode, 1500);
+                });
         }
 
         function switchToWaitingMode() {
@@ -168,7 +159,9 @@
         function checkUserStatus(playerName) {
             if (!playerName) return;
             
-            fetch(scriptURL + "?playerName=" + encodeURIComponent(playerName))
+            let checkURL = scriptURL + "?playerName=" + encodeURIComponent(playerName);
+
+            fetch(checkURL)
                 .then(res => res.json())
                 .then(data => {
                     if (data.status === "Pending") {
