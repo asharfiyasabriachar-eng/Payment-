@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment Screen</title>
+    <title>Payment & Approval Screen</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -34,8 +34,8 @@
             margin: 5px 0;
         }
         .qr-box img {
-            width: 130px;
-            height: 130px;
+            width: 120px;
+            height: 120px;
             object-fit: contain;
         }
         input[type="text"] {
@@ -79,69 +79,56 @@
         <h2>भुगतान करें (Payment)</h2>
         <p style="font-size: 11px; color: #94a3b8; margin-top: 0;">QR कोड स्कैन करें, नाम और UTR दर्ज करें।</p>
 
+        <!-- QR कोड -->
         <div class="qr-box">
             <img src="https://i.ibb.co/W474r907/qr-code.png" alt="QR Code">
         </div>
 
+        <!-- UTR फॉर्म (छिपा हुआ आईफ्रेम के जरिए सीधे गूगल फॉर्म में डेटा भेजेगा) -->
         <div id="paymentFormSection">
-            <input type="text" id="nameInput" placeholder="अपना नाम दर्ज करें">
-            <input type="text" id="utrInput" placeholder="12 अंकों का UTR नंबर दर्ज करें">
-            <button class="action-btn" onclick="submitUTR()">UTR जमा करें</button>
+            <form id="payForm" action="https://docs.google.com/forms/d/e/1FAIpQLSfwS1_ArpcX1dWvcZF12uWscCEBfDLej9k-1xEqNmareS5XgA/formResponse" method="POST" target="hidden_iframe" onsubmit="handleFormSubmit()">
+                <input type="text" id="nameInput" name="entry.96567469" required placeholder="अपना नाम दर्ज करें">
+                <input type="text" id="utrInput" name="entry.119559036" required placeholder="12 अंकों का UTR नंबर दर्ज करें">
+                <button type="submit" class="action-btn">UTR जमा करें</button>
+            </form>
             <div id="statusMsg" class="msg"></div>
         </div>
 
+        <!-- पेंडिंग / टाइमर स्क्रीन -->
         <div id="timerSection">
             <div id="infoMessage" class="msg" style="background: rgba(234, 179, 8, 0.2); color: #fde047;">कृपया एडमिन के अप्रूवल का इंतज़ार करें...</div>
             <h3 id="countdownDisplay" style="color: #4ade80; font-size: 20px; margin: 10px 0; display: none;">--:--:--</h3>
         </div>
     </div>
 
+    <!-- बैकग्राउंड में फॉर्म सबमिट करने के लिए हिडन आईफ्रेम -->
+    <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
+
     <script>
-        // आपका नया यूआरएल यहाँ सफलतापूर्वक सेट कर दिया गया है
-        let scriptURL = "https://script.google.com/macros/s/AKfycbx5MWH7djyd3kA0Ci2QdUQYXMUxwWjFjXYlhLSqFPlIJoIMnOXX9YkdokjzbAZoDQSnXQ/exec";
+        // आपका Google Apps Script का GET URL (स्टेटस चेक करने के लिए)
+        let statusCheckURL = "https://script.google.com/macros/s/AKfycbx5MWH7djyd3kA0Ci2QdUQYXMUxwWjFjXYlhLSqFPlIJoIMnOXX9YkdokjzbAZoDQSnXQ/exec";
 
         window.onload = function() {
             let savedName = localStorage.getItem("mine_player_name");
             if (savedName) {
                 document.getElementById("nameInput").value = savedName;
                 checkUserStatus(savedName);
-                setInterval(() => checkUserStatus(savedName), 10000);
+                setInterval(() => checkUserStatus(savedName), 10000); // हर 10 सेकंड में स्टेटस चेक करेगा
             }
         };
 
-        function submitUTR() {
+        function handleFormSubmit() {
             let nameVal = document.getElementById("nameInput").value.trim();
-            let utrVal = document.getElementById("utrInput").value.trim();
-            let msgBox = document.getElementById("statusMsg");
-
-            if (!nameVal) {
-                msgBox.style.color = "#f87171";
-                msgBox.innerText = "कृपया पहले अपना नाम लिखें!";
-                return;
-            }
-            if (!utrVal) {
-                msgBox.style.color = "#f87171";
-                msgBox.innerText = "कृपया UTR नंबर लिखें!";
-                return;
-            }
-
             localStorage.setItem("mine_player_name", nameVal);
+            
+            let msgBox = document.getElementById("statusMsg");
             msgBox.style.color = "#4ade80";
-            msgBox.innerText = "डेटा भेजा जा रहा है...";
+            msgBox.innerText = "UTR सफलतापूर्वक दर्ज हो गया!";
 
-            let targetURL = scriptURL + "?playerName=" + encodeURIComponent(nameVal) + "&utr=" + encodeURIComponent(utrVal);
-
-            fetch(targetURL)
-                .then(res => res.json())
-                .then(data => {
-                    msgBox.innerText = "UTR सफलतापूर्वक दर्ज हो गया!";
-                    setTimeout(switchToWaitingMode, 1000);
-                    setInterval(() => checkUserStatus(nameVal), 10000);
-                })
-                .catch(err => {
-                    msgBox.innerText = "UTR दर्ज हो गया!";
-                    setTimeout(switchToWaitingMode, 1000);
-                });
+            setTimeout(() => {
+                switchToWaitingMode();
+                setInterval(() => checkUserStatus(nameVal), 10000);
+            }, 1500);
         }
 
         function switchToWaitingMode() {
@@ -151,7 +138,7 @@
 
         function checkUserStatus(playerName) {
             if (!playerName) return;
-            let checkURL = scriptURL + "?playerName=" + encodeURIComponent(playerName);
+            let checkURL = statusCheckURL + "?playerName=" + encodeURIComponent(playerName);
 
             fetch(checkURL)
                 .then(res => res.json())
@@ -197,4 +184,3 @@
     </script>
 </body>
 </html>
-
