@@ -25,23 +25,23 @@
             text-align: center;
             border: 2px solid #facc15;
         }
-        h2 { color: #facc15; margin-bottom: 10px; }
+        h2 { color: #facc15; margin-bottom: 5px; font-size: 20px; }
         .qr-box {
             background: #fff;
-            padding: 10px;
+            padding: 8px;
             border-radius: 10px;
             display: inline-block;
-            margin: 10px 0;
+            margin: 5px 0;
         }
         .qr-box img {
-            width: 150px;
-            height: 150px;
+            width: 130px;
+            height: 130px;
             object-fit: contain;
         }
         input[type="text"] {
             width: 90%;
-            padding: 10px;
-            margin: 10px 0;
+            padding: 9px;
+            margin: 6px 0;
             border: 2px solid #facc15;
             background: #020617;
             color: #fff;
@@ -54,8 +54,8 @@
             background: linear-gradient(135deg, #22c55e, #16a34a);
             color: #fff;
             border: none;
-            padding: 12px;
-            font-size: 16px;
+            padding: 11px;
+            font-size: 15px;
             font-weight: bold;
             border-radius: 8px;
             cursor: pointer;
@@ -64,10 +64,10 @@
             box-shadow: 0 4px 10px rgba(34, 197, 94, 0.4);
         }
         .msg {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: bold;
-            margin-top: 10px;
-            padding: 8px;
+            margin-top: 5px;
+            padding: 6px;
             border-radius: 6px;
         }
         #timerSection { display: none; }
@@ -77,7 +77,7 @@
 
     <div class="card">
         <h2>भुगतान करें (Payment)</h2>
-        <p style="font-size: 12px; color: #94a3b8;">नीचे दिए गए QR कोड पर स्कैन करके पेमेंट करें और UTR नंबर दर्ज करें।</p>
+        <p style="font-size: 11px; color: #94a3b8; margin-top: 0;">QR कोड स्कैन करें, नाम और UTR दर्ज करें।</p>
 
         <!-- QR कोड इमेज -->
         <div class="qr-box">
@@ -86,6 +86,7 @@
 
         <!-- UTR फॉर्म स्क्रीन -->
         <div id="paymentFormSection">
+            <input type="text" id="nameInput" placeholder="अपना नाम दर्ज करें">
             <input type="text" id="utrInput" placeholder="12 अंकों का UTR नंबर दर्ज करें">
             <button class="action-btn" onclick="submitUTR()">UTR जमा करें</button>
             <div id="statusMsg" class="msg"></div>
@@ -94,42 +95,57 @@
         <!-- पेंडिंग / टाइमर स्क्रीन -->
         <div id="timerSection">
             <div id="infoMessage" class="msg" style="background: rgba(234, 179, 8, 0.2); color: #fde047;"></div>
-            <h3 id="countdownDisplay" style="color: #4ade80; font-size: 22px; margin: 15px 0;">--:--:--</h3>
+            <h3 id="countdownDisplay" style="color: #4ade80; font-size: 20px; margin: 10px 0;">--:--:--</h3>
         </div>
     </div>
 
     <!-- डेटा भेजने के लिए फॉर्म -->
     <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
-    <form id="dataForm" action="https://script.google.com/macros/s/AKfycbzyT6_JCUuj7flYaa2etMoi1owBK8wDlWm6DD8iJ2bqawLT2AvkbWu-HwUq4l32FouNLg/exec" method="POST" target="hidden_iframe" style="display:none;">
+    <form id="dataForm" action="YOUR_APPS_SCRIPT_URL_HERE" method="POST" target="hidden_iframe" style="display:none;">
         <input type="text" name="playerName" id="formPlayerName">
         <input type="text" name="utr" id="formUtr">
         <input type="text" name="status" id="formStatus">
     </form>
 
     <script>
-        let scriptURL = "https://script.google.com/macros/s/AKfycbzyT6_JCUuj7flYaa2etMoi1owBK8wDlWm6DD8iJ2bqawLT2AvkbWu-HwUq4l32FouNLg/exec";
-        let playerName = localStorage.getItem("mine_player_name") || "User_" + Math.floor(Math.random() * 1000);
-        localStorage.setItem("mine_player_name", playerName);
+        let scriptURL = "YOUR_APPS_SCRIPT_URL_HERE"; // यहाँ अपना नया डिप्लॉयड वेब ऐप URL डालें
+        let playerName = "";
 
         window.onload = function() {
-            checkUserStatus();
-            setInterval(checkUserStatus, 10000); // हर 10 सेकंड में शीट चेक करेगा
+            let savedName = localStorage.getItem("mine_player_name");
+            if (savedName) {
+                playerName = savedName;
+                document.getElementById("nameInput").value = playerName;
+                checkUserStatus();
+                setInterval(checkUserStatus, 10000); // हर 10 सेकंड में शीट चेक करेगा
+            }
         };
 
         function submitUTR() {
-            let utr = document.getElementById("utrInput").value.trim();
-            if(!utr) {
-                let msgBox = document.getElementById("statusMsg");
+            let nameVal = document.getElementById("nameInput").value.trim();
+            let utrVal = document.getElementById("utrInput").value.trim();
+            let msgBox = document.getElementById("statusMsg");
+
+            if (!nameVal) {
                 msgBox.style.color = "#f87171";
-                msgBox.innerText = "कृपया पहले UTR नंबर लिखें!";
+                msgBox.innerText = "कृपया पहले अपना नाम लिखें!";
+                return;
+            }
+            if (!utrVal) {
+                msgBox.style.color = "#f87171";
+                msgBox.innerText = "कृपया UTR नंबर लिखें!";
                 return;
             }
 
-            document.getElementById("statusMsg").style.color = "#4ade80";
-            document.getElementById("statusMsg").innerText = "UTR दर्ज हो गया! अब अप्रूवल का इंतजार करिए...";
+            playerName = nameVal;
+            localStorage.setItem("mine_player_name", playerName);
 
+            msgBox.style.color = "#4ade80";
+            msgBox.innerText = "UTR दर्ज हो गया! अब अप्रूवल का इंतजार करिए...";
+
+            // डेटा गूगल शीट में भेजें
             document.getElementById("formPlayerName").value = playerName;
-            document.getElementById("formUtr").value = utr;
+            document.getElementById("formUtr").value = utrVal;
             document.getElementById("formStatus").value = "Pending";
             document.getElementById("dataForm").submit();
 
@@ -144,6 +160,8 @@
         }
 
         function checkUserStatus() {
+            if (!playerName) return;
+            
             fetch(scriptURL + "?playerName=" + encodeURIComponent(playerName))
                 .then(res => res.json())
                 .then(data => {
@@ -172,6 +190,7 @@
 
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
+                    localStorage.removeItem("mine_approved_time");
                     location.reload();
                 } else {
                     let hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
