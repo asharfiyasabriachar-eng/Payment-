@@ -99,25 +99,16 @@
         </div>
     </div>
 
-    <!-- डेटा भेजने के लिए फॉर्म -->
-    <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
-    <form id="dataForm" action="YOUR_APPS_SCRIPT_URL_HERE" method="POST" target="hidden_iframe" style="display:none;">
-        <input type="text" name="playerName" id="formPlayerName">
-        <input type="text" name="utr" id="formUtr">
-        <input type="text" name="status" id="formStatus">
-    </form>
-
     <script>
-        let scriptURL = "YOUR_APPS_SCRIPT_URL_HERE"; // यहाँ अपना नया डिप्लॉयड वेब ऐप URL डालें
-        let playerName = "";
+        // आपका नया डिप्लॉयड वेब ऐप यूआरएल
+        let scriptURL = "https://script.google.com/macros/s/AKfycbxR_p7cPHm3x8Wjer5LWieHrrB7G-O4lBM3Q2P_OASltFryNfzVUFVs8EbVS5mF01gH6Q/exec";
 
         window.onload = function() {
             let savedName = localStorage.getItem("mine_player_name");
             if (savedName) {
-                playerName = savedName;
-                document.getElementById("nameInput").value = playerName;
-                checkUserStatus();
-                setInterval(checkUserStatus, 10000); // हर 10 सेकंड में शीट चेक करेगा
+                document.getElementById("nameInput").value = savedName;
+                checkUserStatus(savedName);
+                setInterval(() => checkUserStatus(savedName), 10000);
             }
         };
 
@@ -137,29 +128,44 @@
                 return;
             }
 
-            playerName = nameVal;
-            localStorage.setItem("mine_player_name", playerName);
+            localStorage.setItem("mine_player_name", nameVal);
 
             msgBox.style.color = "#4ade80";
-            msgBox.innerText = "UTR दर्ज हो गया! अब अप्रूवल का इंतजार करिए...";
+            msgBox.innerText = "डेटा भेजा जा रहा है...";
 
-            // डेटा गूगल शीट में भेजें
-            document.getElementById("formPlayerName").value = playerName;
-            document.getElementById("formUtr").value = utrVal;
-            document.getElementById("formStatus").value = "Pending";
-            document.getElementById("dataForm").submit();
+            let formData = {
+                playerName: nameVal,
+                utr: utrVal,
+                status: "Pending"
+            };
 
-            setTimeout(switchToWaitingMode, 1500);
+            fetch(scriptURL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(() => {
+                msgBox.innerText = "UTR सफलतापूर्वक दर्ज हो गया!";
+                setTimeout(switchToWaitingMode, 1500);
+                setInterval(() => checkUserStatus(nameVal), 10000);
+            })
+            .catch(err => {
+                msgBox.style.color = "#f87171";
+                msgBox.innerText = "कनेक्शन एरर, कृपया दोबारा प्रयास करें।";
+            });
         }
 
         function switchToWaitingMode() {
             document.getElementById("paymentFormSection").style.display = "none";
             document.getElementById("timerSection").style.display = "block";
-            document.getElementById("infoMessage").innerText = "कृपया अप्रूवर का इंतजार करिए। एडमिन के अप्रूव करते ही गेम शुरू हो जाएगा!";
+            document.getElementById("infoMessage").innerText = "कृपया एडमिन के अप्रूवल का इंतज़ार करें...";
             document.getElementById("countdownDisplay").style.display = "none";
         }
 
-        function checkUserStatus() {
+        function checkUserStatus(playerName) {
             if (!playerName) return;
             
             fetch(scriptURL + "?playerName=" + encodeURIComponent(playerName))
