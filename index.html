@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment & Approval Screen</title>
+    <title>Payment Screen</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -79,12 +79,10 @@
         <h2>भुगतान करें (Payment)</h2>
         <p style="font-size: 11px; color: #94a3b8; margin-top: 0;">QR कोड स्कैन करें, नाम और UTR दर्ज करें।</p>
 
-        <!-- QR कोड इमेज -->
         <div class="qr-box">
             <img src="https://i.ibb.co/W474r907/qr-code.png" alt="QR Code">
         </div>
 
-        <!-- UTR फॉर्म स्क्रीन -->
         <div id="paymentFormSection">
             <input type="text" id="nameInput" placeholder="अपना नाम दर्ज करें">
             <input type="text" id="utrInput" placeholder="12 अंकों का UTR नंबर दर्ज करें">
@@ -92,16 +90,15 @@
             <div id="statusMsg" class="msg"></div>
         </div>
 
-        <!-- पेंडिंग / टाइमर स्क्रीन -->
         <div id="timerSection">
-            <div id="infoMessage" class="msg" style="background: rgba(234, 179, 8, 0.2); color: #fde047;"></div>
-            <h3 id="countdownDisplay" style="color: #4ade80; font-size: 20px; margin: 10px 0;">--:--:--</h3>
+            <div id="infoMessage" class="msg" style="background: rgba(234, 179, 8, 0.2); color: #fde047;">कृपया एडमिन के अप्रूवल का इंतज़ार करें...</div>
+            <h3 id="countdownDisplay" style="color: #4ade80; font-size: 20px; margin: 10px 0; display: none;">--:--:--</h3>
         </div>
     </div>
 
     <script>
-        // आपका नया अपडेटेड वेब ऐप यूआरएल यहाँ डाला जा चुका है
-        let scriptURL = "https://script.google.com/macros/s/AKfycbySYUvNt8xfmc7XGiT3Qg9g5Xm6cpuvi8_-PiC4ya7ay9Fci-h9IA3huY7ysSf3jb1N8Q/exec";
+        // आपका नया यूआरएल यहाँ सफलतापूर्वक सेट कर दिया गया है
+        let scriptURL = "https://script.google.com/macros/s/AKfycbx5MWH7djyd3kA0Ci2QdUQYXMUxwWjFjXYlhLSqFPlIJoIMnOXX9YkdokjzbAZoDQSnXQ/exec";
 
         window.onload = function() {
             let savedName = localStorage.getItem("mine_player_name");
@@ -129,36 +126,31 @@
             }
 
             localStorage.setItem("mine_player_name", nameVal);
-
             msgBox.style.color = "#4ade80";
             msgBox.innerText = "डेटा भेजा जा रहा है...";
 
-            // GET Request के जरिए डेटा भेजना ताकि शीट में तुरंत सेव हो जाए
-            let targetURL = scriptURL + "?action=submit&playerName=" + encodeURIComponent(nameVal) + "&utr=" + encodeURIComponent(utrVal);
+            let targetURL = scriptURL + "?playerName=" + encodeURIComponent(nameVal) + "&utr=" + encodeURIComponent(utrVal);
 
             fetch(targetURL)
                 .then(res => res.json())
                 .then(data => {
                     msgBox.innerText = "UTR सफलतापूर्वक दर्ज हो गया!";
-                    setTimeout(switchToWaitingMode, 1500);
+                    setTimeout(switchToWaitingMode, 1000);
                     setInterval(() => checkUserStatus(nameVal), 10000);
                 })
                 .catch(err => {
                     msgBox.innerText = "UTR दर्ज हो गया!";
-                    setTimeout(switchToWaitingMode, 1500);
+                    setTimeout(switchToWaitingMode, 1000);
                 });
         }
 
         function switchToWaitingMode() {
             document.getElementById("paymentFormSection").style.display = "none";
             document.getElementById("timerSection").style.display = "block";
-            document.getElementById("infoMessage").innerText = "कृपया एडमिन के अप्रूवल का इंतज़ार करें...";
-            document.getElementById("countdownDisplay").style.display = "none";
         }
 
         function checkUserStatus(playerName) {
             if (!playerName) return;
-            
             let checkURL = scriptURL + "?playerName=" + encodeURIComponent(playerName);
 
             fetch(checkURL)
@@ -166,8 +158,7 @@
                 .then(data => {
                     if (data.status === "Pending") {
                         switchToWaitingMode();
-                    } 
-                    else if (data.status === "Approved") {
+                    } else if (data.status === "Approved") {
                         start24HourTimer(data.timestamp);
                     }
                 })
@@ -189,7 +180,7 @@
 
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
-                    localStorage.removeItem("mine_approved_time");
+                    localStorage.removeItem("mine_player_name");
                     location.reload();
                 } else {
                     let hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
@@ -206,3 +197,4 @@
     </script>
 </body>
 </html>
+
