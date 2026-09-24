@@ -84,7 +84,7 @@
             <img src="https://i.ibb.co/W474r907/qr-code.png" alt="QR Code">
         </div>
 
-        <!-- UTR फॉर्म (सीधे आपके नए Google Form पर डेटा भेजेगा) -->
+        <!-- UTR फॉर्म -->
         <div id="paymentFormSection">
             <form id="payForm" action="https://docs.google.com/forms/d/e/1FAIpQLSfwS1_ArpcX1dWvcZF12uWscCEBfDLej9k-1xEqNmareS5XgA/formResponse" method="POST" target="hidden_iframe" onsubmit="handleFormSubmit()">
                 <input type="text" id="nameInput" name="entry.96567469" required placeholder="अपना नाम दर्ज करें">
@@ -101,19 +101,19 @@
         </div>
     </div>
 
-    <!-- बैकग्राउंड में फॉर्म सबमिट करने के लिए हिडन आईफ्रेम -->
+    <!-- हिडन आईफ्रेम -->
     <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
 
     <script>
-        // आपका नया Apps Script का Web App URL यहाँ जुड़ा हुआ है
-        let statusCheckURL = "https://script.google.com/macros/s/AKfycbx7LXl5qFUmMHx-Nb7OhtrZCHfnIVtJFB_3L4-aTTbv4N-zqjf2C9EXMdtI-qWDLQud2A/exec";
+        // आपका बिल्कुल नया और अपडेटेड Apps Script Web App URL
+        let statusCheckURL = "https://script.google.com/macros/s/AKfycbwFTxZtqiIanci8rDGVHCXLLiGDATwLk6E3oXMjVvKc6RYJ4054-djTz4rGg35v9ml-ug/exec";
 
         window.onload = function() {
             let savedName = localStorage.getItem("mine_player_name");
             if (savedName) {
                 document.getElementById("nameInput").value = savedName;
                 checkUserStatus(savedName);
-                setInterval(() => checkUserStatus(savedName), 10000); // हर 10 सेकंड में स्टेटस चेक करेगा
+                setInterval(() => checkUserStatus(savedName), 10000);
             }
         };
 
