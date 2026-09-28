@@ -100,8 +100,8 @@
     </div>
 
     <script>
-        // आपका Google Apps Script Web App URL यहाँ पहले ही सेट कर दिया गया है
-        let scriptAPIURL = "https://script.google.com/macros/s/AKfycbxPR77SdTPx31h1kH-EXVbFAcAkfD1co3RTLXJVYhtUR4GG3h8yQL0ObDaefr1TikfXiA/exec";
+        // आपका नया Google Apps Script Web App URL यहाँ सेट कर दिया गया है
+        let scriptAPIURL = "https://script.google.com/macros/s/AKfycbzeJJWSqMKm2GLFKqk2uBtjuJZf1uIsMcFVwUpFxC8FrMrFLEMO8ncusOnhaF6UWdErjA/exec";
 
         window.onload = function() {
             let savedName = localStorage.getItem("mine_player_name");
@@ -132,24 +132,31 @@
             msgBox.style.color = "#facc15";
             msgBox.innerText = "डेटा भेजा जा रहा है...";
 
-            let submitURL = scriptAPIURL + "?action=submit&playerName=" + encodeURIComponent(nameVal) + "&utr=" + encodeURIComponent(utrVal);
+            let callbackName = 'cb_' + new Date().getTime();
+            let submitURL = scriptAPIURL + "?action=submit&playerName=" + encodeURIComponent(nameVal) + "&utr=" + encodeURIComponent(utrVal) + "&callback=" + callbackName;
 
-            fetch(submitURL)
-                .then(res => res.json())
-                .then(data => {
-                    localStorage.setItem("mine_player_name", nameVal);
-                    msgBox.style.color = "#4ade80";
-                    msgBox.innerText = "UTR सफलतापूर्वक दर्ज हो गया!";
-                    
-                    setTimeout(() => {
-                        switchToWaitingMode();
-                        setInterval(() => checkUserStatus(nameVal), 10000);
-                    }, 1500);
-                })
-                .catch(err => {
-                    msgBox.style.color = "#f87171";
-                    msgBox.innerText = "नेटवर्क एरर, दोबारा कोशिश करें।";
-                });
+            window[callbackName] = function(data) {
+                localStorage.setItem("mine_player_name", nameVal);
+                msgBox.style.color = "#4ade80";
+                msgBox.innerText = "UTR सफलतापूर्वक दर्ज हो गया!";
+                
+                setTimeout(() => {
+                    switchToWaitingMode();
+                    setInterval(() => checkUserStatus(nameVal), 10000);
+                }, 1500);
+                delete window[callbackName];
+                let scriptEl = document.getElementById('jsonp_script');
+                if(scriptEl) scriptEl.remove();
+            };
+
+            let script = document.createElement('script');
+            script.id = 'jsonp_script';
+            script.src = submitURL;
+            script.onerror = function() {
+                msgBox.style.color = "#f87171";
+                msgBox.innerText = "नेटवर्क एरर, दोबारा कोशिश करें।";
+            };
+            document.body.appendChild(script);
         }
 
         function switchToWaitingMode() {
@@ -159,18 +166,24 @@
 
         function checkUserStatus(playerName) {
             if (!playerName) return;
-            let checkURL = scriptAPIURL + "?playerName=" + encodeURIComponent(playerName);
+            let cbName = 'check_cb_' + Math.floor(Math.random() * 100000);
+            let checkURL = scriptAPIURL + "?playerName=" + encodeURIComponent(playerName) + "&callback=" + cbName;
 
-            fetch(checkURL)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === "Pending") {
-                        switchToWaitingMode();
-                    } else if (data.status === "Approved") {
-                        start24HourTimer(data.timestamp);
-                    }
-                })
-                .catch(err => console.log(err));
+            window[cbName] = function(data) {
+                if (data.status === "Pending") {
+                    switchToWaitingMode();
+                } else if (data.status === "Approved") {
+                    start24HourTimer(data.timestamp);
+                }
+                delete window[cbName];
+                let el = document.getElementById(cbName);
+                if (el) el.remove();
+            };
+
+            let script = document.createElement('script');
+            script.id = cbName;
+            script.src = checkURL;
+            document.body.appendChild(script);
         }
 
         function start24HourTimer(approvalTimeString) {
