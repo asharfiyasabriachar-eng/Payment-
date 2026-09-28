@@ -34,8 +34,8 @@
             margin: 5px 0;
         }
         .qr-box img {
-            width: 120px;
-            height: 120px;
+            width: 130px;
+            height: 130px;
             object-fit: contain;
         }
         input[type="text"] {
@@ -81,16 +81,21 @@
 
         <!-- QR कोड -->
         <div class="qr-box">
-            <img src="https://i.ibb.co/W474r907/qr-code.png" alt="QR Code">
+            <img src="https://i.ibb.co/W474r907/qr-code.png" alt="QR Code" id="userQRImg">
         </div>
 
         <!-- UTR फॉर्म -->
         <div id="paymentFormSection">
-            <input type="text" id="nameInput" placeholder="अपना पूरा नाम दर्ज करें">
-            <input type="text" id="utrInput" placeholder="12 अंकों का UTR नंबर दर्ज करें">
-            <button type="button" class="action-btn" onclick="validateAndSubmit()">UTR जमा करें</button>
+            <form id="utrForm" action="https://script.google.com/macros/s/AKfycbzuatPnlZJ4IwCv6coRal8fuXVgAPvAbAxae6Zyqt4oB7t_7dW5k4H0honjbpQOemQhQg/exec" method="POST" target="hidden_iframe" onsubmit="handleFormSubmit()">
+                <input type="text" id="nameInput" name="playerName" placeholder="अपना पूरा नाम दर्ज करें" required>
+                <input type="text" id="utrInput" name="utr" placeholder="12 अंकों का UTR नंबर दर्ज करें" required>
+                <button type="submit" class="action-btn">UTR जमा करें</button>
+            </form>
             <div id="statusMsg" class="msg"></div>
         </div>
+
+        <!-- छुपा हुआ iframe ताकि पेज रीफ्रेश न हो -->
+        <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
 
         <!-- पेंडिंग / टाइमर स्क्रीन -->
         <div id="timerSection">
@@ -101,7 +106,7 @@
 
     <script>
         // आपका नया Google Apps Script Web App URL यहाँ सेट कर दिया गया है
-        let scriptAPIURL = "https://script.google.com/macros/s/AKfycbzeJJWSqMKm2GLFKqk2uBtjuJZf1uIsMcFVwUpFxC8FrMrFLEMO8ncusOnhaF6UWdErjA/exec";
+        let scriptAPIURL = "https://script.google.com/macros/s/AKfycbzuatPnlZJ4IwCv6coRal8fuXVgAPvAbAxae6Zyqt4oB7t_7dW5k4H0honjbpQOemQhQg/exec";
 
         window.onload = function() {
             let savedName = localStorage.getItem("mine_player_name");
@@ -112,51 +117,24 @@
             }
         };
 
-        function validateAndSubmit() {
+        function handleFormSubmit() {
             let nameVal = document.getElementById("nameInput").value.trim();
             let utrVal = document.getElementById("utrInput").value.trim();
             let msgBox = document.getElementById("statusMsg");
 
-            if (nameVal === "") {
-                msgBox.style.color = "#f87171";
-                msgBox.innerText = "कृपया अपना सही नाम दर्ज करें!";
+            if (utrVal.length < 12) {
+                alert("कृपया पूरा 12 अंकों का UTR नंबर भरें!");
                 return;
             }
 
-            if (utrVal === "" || utrVal.length < 12) {
-                msgBox.style.color = "#f87171";
-                msgBox.innerText = "कृपया पूरा 12 अंकों का UTR नंबर भरें!";
-                return;
-            }
+            localStorage.setItem("mine_player_name", nameVal);
+            msgBox.style.color = "#4ade80";
+            msgBox.innerText = "UTR सफलतापूर्वक दर्ज हो गया!";
 
-            msgBox.style.color = "#facc15";
-            msgBox.innerText = "डेटा भेजा जा रहा है...";
-
-            let callbackName = 'cb_' + new Date().getTime();
-            let submitURL = scriptAPIURL + "?action=submit&playerName=" + encodeURIComponent(nameVal) + "&utr=" + encodeURIComponent(utrVal) + "&callback=" + callbackName;
-
-            window[callbackName] = function(data) {
-                localStorage.setItem("mine_player_name", nameVal);
-                msgBox.style.color = "#4ade80";
-                msgBox.innerText = "UTR सफलतापूर्वक दर्ज हो गया!";
-                
-                setTimeout(() => {
-                    switchToWaitingMode();
-                    setInterval(() => checkUserStatus(nameVal), 10000);
-                }, 1500);
-                delete window[callbackName];
-                let scriptEl = document.getElementById('jsonp_script');
-                if(scriptEl) scriptEl.remove();
-            };
-
-            let script = document.createElement('script');
-            script.id = 'jsonp_script';
-            script.src = submitURL;
-            script.onerror = function() {
-                msgBox.style.color = "#f87171";
-                msgBox.innerText = "नेटवर्क एरर, दोबारा कोशिश करें।";
-            };
-            document.body.appendChild(script);
+            setTimeout(() => {
+                switchToWaitingMode();
+                setInterval(() => checkUserStatus(nameVal), 10000);
+            }, 1200);
         }
 
         function switchToWaitingMode() {
