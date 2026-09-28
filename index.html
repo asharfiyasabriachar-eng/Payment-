@@ -100,8 +100,8 @@
     </div>
 
     <script>
-        // आपका नया और फाइनल Apps Script Web App URL यहाँ सेट है
-        let scriptAPIURL = "https://script.google.com/macros/s/AKfycbybUqWfBMazHLUwRmenEWOA3-iPI-F1Ia4_290qVAPu49_IzP6JsDBXOTr3rgXzE7I_yQ/exec";
+        // आपका Google Apps Script Web App URL यहाँ पहले ही सेट कर दिया गया है
+        let scriptAPIURL = "https://script.google.com/macros/s/AKfycbxPR77SdTPx31h1kH-EXVbFAcAkfD1co3RTLXJVYhtUR4GG3h8yQL0ObDaefr1TikfXiA/exec";
 
         window.onload = function() {
             let savedName = localStorage.getItem("mine_player_name");
@@ -117,14 +117,12 @@
             let utrVal = document.getElementById("utrInput").value.trim();
             let msgBox = document.getElementById("statusMsg");
 
-            // वैलिडेशन: नाम खाली नहीं होना चाहिए
             if (nameVal === "") {
                 msgBox.style.color = "#f87171";
                 msgBox.innerText = "कृपया अपना सही नाम दर्ज करें!";
                 return;
             }
 
-            // वैलिडेशन: UTR कम से कम 12 अंकों का होना चाहिए
             if (utrVal === "" || utrVal.length < 12) {
                 msgBox.style.color = "#f87171";
                 msgBox.innerText = "कृपया पूरा 12 अंकों का UTR नंबर भरें!";
