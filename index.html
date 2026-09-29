@@ -86,7 +86,7 @@
 
         <!-- UTR फॉर्म -->
         <div id="paymentFormSection">
-            <form id="utrForm" action="https://script.google.com/macros/s/AKfycbxPfoE6v4NEOJuvz7edrnKieldmBKbtKD70OxLsHVc2yU6sTn7o_H2wQrz1T1z4a0Zhig/exec" method="POST" target="hidden_iframe" onsubmit="return handleFormSubmit()">
+            <form id="utrForm" action="https://script.google.com/macros/s/AKfycbwgnnCRiA775TL4MlaiTBrZZ3tIn9668-4_RaEeSxxsS_xrGVFzv6YtKmaEnrFC71RW-A/exec" method="POST" target="hidden_iframe" onsubmit="return handleFormSubmit()">
                 <input type="text" id="nameInput" name="playerName" placeholder="अपना पूरा नाम दर्ज करें" required>
                 <input type="text" id="utrInput" name="utr" placeholder="12 अंकों का UTR नंबर दर्ज करें" required>
                 <button type="submit" class="action-btn">UTR जमा करें</button>
@@ -94,7 +94,6 @@
             <div id="statusMsg" class="msg"></div>
         </div>
 
-        <!-- छुपा हुआ iframe ताकि पेज रीफ्रेश न हो -->
         <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
 
         <!-- पेंडिंग / टाइमर स्क्रीन -->
@@ -105,13 +104,28 @@
     </div>
 
     <script>
-        let scriptAPIURL = "https://script.google.com/macros/s/AKfycbxPfoE6v4NEOJuvz7edrnKieldmBKbtKD70OxLsHVc2yU6sTn7o_H2wQrz1T1z4a0Zhig/exec";
+        // आपका नया और पक्का Google Apps Script Web App URL
+        let scriptAPIURL = "https://script.google.com/macros/s/AKfycbwgnnCRiA775TL4MlaiTBrZZ3tIn9668-4_RaEeSxxsS_xrGVFzv6YtKmaEnrFC71RW-A/exec";
 
         window.onload = function() {
             let savedName = localStorage.getItem("mine_player_name");
+            let savedExpiry = localStorage.getItem("mine_expiry_time");
+
+            if (savedExpiry) {
+                let timeLeft = parseInt(savedExpiry) - new Date().getTime();
+                if (timeLeft > 0) {
+                    startTimerWithExpiry(parseInt(savedExpiry));
+                    return;
+                } else {
+                    localStorage.removeItem("mine_player_name");
+                    localStorage.removeItem("mine_expiry_time");
+                }
+            }
+
             if (savedName) {
                 document.getElementById("nameInput").value = savedName;
                 checkUserStatus(savedName);
+                setInterval(() => checkUserStatus(savedName), 15000);
             }
         };
 
@@ -120,7 +134,6 @@
             let utrVal = document.getElementById("utrInput").value.trim();
             let msgBox = document.getElementById("statusMsg");
 
-            // केवल 12 अंकों का UTR चेक
             let utrRegex = /^\d{12}$/;
             if (!utrRegex.test(utrVal)) {
                 msgBox.style.color = "#ef4444";
@@ -128,15 +141,14 @@
                 return false; 
             }
 
-            // नाम को सुरक्षित सेव करना
             localStorage.setItem("mine_player_name", nameVal);
             msgBox.style.color = "#4ade80";
             msgBox.innerText = "UTR सफलतापूर्वक दर्ज हो गया!";
 
-            // फॉर्म सबमिट होने के बाद बिना किसी रुकावट के वेटिंग मोड पर जाना
             setTimeout(() => {
                 switchToWaitingMode();
                 checkUserStatus(nameVal);
+                setInterval(() => checkUserStatus(nameVal), 15000);
             }, 1000);
 
             return true;
@@ -150,7 +162,6 @@
         function checkUserStatus(playerName) {
             if (!playerName) return;
             
-            // पुरानी स्क्रिप्ट टैग्स को साफ करना ताकि मेमोरी ओवरलोड न हो
             let oldScript = document.getElementById("dynamic_check_script");
             if (oldScript) oldScript.remove();
 
@@ -158,10 +169,15 @@
             let checkURL = scriptAPIURL + "?playerName=" + encodeURIComponent(playerName) + "&callback=" + cbName;
 
             window[cbName] = function(data) {
-                if (data && data.status === "Pending") {
+                if (data && data.status === "Approved") {
+                    let approvalTime = new Date(data.timestamp).getTime();
+                    if (isNaN(approvalTime)) approvalTime = new Date().getTime();
+                    let expiryTime = approvalTime + (24 * 60 * 60 * 1000); 
+                    
+                    localStorage.setItem("mine_expiry_time", expiryTime);
+                    startTimerWithExpiry(expiryTime);
+                } else if (data && data.status === "Pending") {
                     switchToWaitingMode();
-                } else if (data && data.status === "Approved") {
-                    start24HourTimer(data.timestamp);
                 }
                 delete window[cbName];
             };
@@ -172,15 +188,11 @@
             document.body.appendChild(script);
         }
 
-        function start24HourTimer(approvalTimeString) {
+        function startTimerWithExpiry(expiryTime) {
             document.getElementById("paymentFormSection").style.display = "none";
             document.getElementById("timerSection").style.display = "block";
             document.getElementById("countdownDisplay").style.display = "block";
             document.getElementById("infoMessage").innerText = "✅ आपका पेमेंट अप्रूव हो गया है! टाइमर:";
-
-            let approvalTime = new Date(approvalTimeString).getTime();
-            if (isNaN(approvalTime)) approvalTime = Date.now();
-            let expiryTime = approvalTime + (24 * 60 * 60 * 1000);
 
             let timerInterval = setInterval(() => {
                 let now = new Date().getTime();
@@ -189,6 +201,7 @@
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
                     localStorage.removeItem("mine_player_name");
+                    localStorage.removeItem("mine_expiry_time");
                     location.reload();
                 } else {
                     let hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
