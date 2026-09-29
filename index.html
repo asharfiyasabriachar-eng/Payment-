@@ -112,7 +112,6 @@
             if (savedName) {
                 document.getElementById("nameInput").value = savedName;
                 checkUserStatus(savedName);
-                setInterval(() => checkUserStatus(savedName), 10000);
             }
         };
 
@@ -121,7 +120,7 @@
             let utrVal = document.getElementById("utrInput").value.trim();
             let msgBox = document.getElementById("statusMsg");
 
-            // 12 अंकों का strict UTR वैलिडेशन
+            // केवल 12 अंकों का UTR चेक
             let utrRegex = /^\d{12}$/;
             if (!utrRegex.test(utrVal)) {
                 msgBox.style.color = "#ef4444";
@@ -129,14 +128,16 @@
                 return false; 
             }
 
+            // नाम को सुरक्षित सेव करना
             localStorage.setItem("mine_player_name", nameVal);
             msgBox.style.color = "#4ade80";
             msgBox.innerText = "UTR सफलतापूर्वक दर्ज हो गया!";
 
+            // फॉर्म सबमिट होने के बाद बिना किसी रुकावट के वेटिंग मोड पर जाना
             setTimeout(() => {
                 switchToWaitingMode();
-                setInterval(() => checkUserStatus(nameVal), 10000);
-            }, 1200);
+                checkUserStatus(nameVal);
+            }, 1000);
 
             return true;
         }
@@ -148,22 +149,25 @@
 
         function checkUserStatus(playerName) {
             if (!playerName) return;
-            let cbName = 'check_cb_' + Math.floor(Math.random() * 100000);
+            
+            // पुरानी स्क्रिप्ट टैग्स को साफ करना ताकि मेमोरी ओवरलोड न हो
+            let oldScript = document.getElementById("dynamic_check_script");
+            if (oldScript) oldScript.remove();
+
+            let cbName = 'check_cb_' + Date.now();
             let checkURL = scriptAPIURL + "?playerName=" + encodeURIComponent(playerName) + "&callback=" + cbName;
 
             window[cbName] = function(data) {
-                if (data.status === "Pending") {
+                if (data && data.status === "Pending") {
                     switchToWaitingMode();
-                } else if (data.status === "Approved") {
+                } else if (data && data.status === "Approved") {
                     start24HourTimer(data.timestamp);
                 }
                 delete window[cbName];
-                let el = document.getElementById(cbName);
-                if (el) el.remove();
             };
 
             let script = document.createElement('script');
-            script.id = cbName;
+            script.id = "dynamic_check_script";
             script.src = checkURL;
             document.body.appendChild(script);
         }
@@ -175,6 +179,7 @@
             document.getElementById("infoMessage").innerText = "✅ आपका पेमेंट अप्रूव हो गया है! टाइमर:";
 
             let approvalTime = new Date(approvalTimeString).getTime();
+            if (isNaN(approvalTime)) approvalTime = Date.now();
             let expiryTime = approvalTime + (24 * 60 * 60 * 1000);
 
             let timerInterval = setInterval(() => {
