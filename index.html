@@ -86,7 +86,7 @@
 
         <!-- UTR फॉर्म -->
         <div id="paymentFormSection">
-            <form id="utrForm" action="https://script.google.com/macros/s/AKfycbzuatPnlZJ4IwCv6coRal8fuXVgAPvAbAxae6Zyqt4oB7t_7dW5k4H0honjbpQOemQhQg/exec" method="POST" target="hidden_iframe" onsubmit="handleFormSubmit()">
+            <form id="utrForm" action="https://script.google.com/macros/s/AKfycbySOWPQcq-Fa0n-gvpNE9Z0tqzx2rZb784_oKxGdRj0CacVRGXlPl0QQ3wHR81YFPyz2g/exec" method="POST" target="hidden_iframe" onsubmit="handleFormSubmit()">
                 <input type="text" id="nameInput" name="playerName" placeholder="अपना पूरा नाम दर्ज करें" required>
                 <input type="text" id="utrInput" name="utr" placeholder="12 अंकों का UTR नंबर दर्ज करें" required>
                 <button type="submit" class="action-btn">UTR जमा करें</button>
@@ -94,7 +94,7 @@
             <div id="statusMsg" class="msg"></div>
         </div>
 
-        <!-- छुपा हुआ iframe ताकि पेज रीफ्रेश न हो -->
+        <!-- छुपा हुआ iframe -->
         <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
 
         <!-- पेंडिंग / टाइमर स्क्रीन -->
@@ -105,8 +105,8 @@
     </div>
 
     <script>
-        // आपका नया Google Apps Script Web App URL यहाँ सेट कर दिया गया है
-        let scriptAPIURL = "https://script.google.com/macros/s/AKfycbzuatPnlZJ4IwCv6coRal8fuXVgAPvAbAxae6Zyqt4oB7t_7dW5k4H0honjbpQOemQhQg/exec";
+        // आपका नया और सही Google Apps Script Web App URL
+        let scriptAPIURL = "https://script.google.com/macros/s/AKfycbySOWPQcq-Fa0n-gvpNE9Z0tqzx2rZb784_oKxGdRj0CacVRGXlPl0QQ3wHR81YFPyz2g/exec";
 
         window.onload = function() {
             let savedName = localStorage.getItem("mine_player_name");
