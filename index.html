@@ -105,7 +105,6 @@
     </div>
 
     <script>
-        // आपका नया और पक्का Google Apps Script Web App URL
         let scriptAPIURL = "https://script.google.com/macros/s/AKfycbxPfoE6v4NEOJuvz7edrnKieldmBKbtKD70OxLsHVc2yU6sTn7o_H2wQrz1T1z4a0Zhig/exec";
 
         window.onload = function() {
@@ -122,12 +121,12 @@
             let utrVal = document.getElementById("utrInput").value.trim();
             let msgBox = document.getElementById("statusMsg");
 
-            // स्मार्ट वैलिडेशन: UTR सिर्फ 12 अंकों का होना चाहिए
+            // 12 अंकों का strict UTR वैलिडेशन
             let utrRegex = /^\d{12}$/;
             if (!utrRegex.test(utrVal)) {
                 msgBox.style.color = "#ef4444";
                 msgBox.innerText = "❌ कृपया केवल 12 अंकों का सही UTR नंबर दर्ज करें!";
-                return false; // गलत होने पर सबमिट होने से रोकेगा
+                return false; 
             }
 
             localStorage.setItem("mine_player_name", nameVal);
@@ -168,8 +167,6 @@
             script.src = checkURL;
             document.body.appendChild(script);
         }
-
-### 
 
         function start24HourTimer(approvalTimeString) {
             document.getElementById("paymentFormSection").style.display = "none";
