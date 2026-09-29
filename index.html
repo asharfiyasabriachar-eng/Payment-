@@ -64,28 +64,26 @@
             box-shadow: 0 4px 10px rgba(34, 197, 94, 0.4);
         }
         .msg {
-            font-size: 12px;
+            font-size: 13px;
             font-weight: bold;
             margin-top: 8px;
-            padding: 6px;
+            padding: 8px;
             border-radius: 6px;
         }
-        #timerSection { display: none; }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <h2>भुगतान करें (Payment)</h2>
-        <p style="font-size: 11px; color: #94a3b8; margin-top: 0;">QR कोड स्कैन करें और सही विवरण भरें।</p>
-
-        <!-- QR कोड -->
-        <div class="qr-box">
-            <img src="https://i.ibb.co/W474r907/qr-code.png" alt="QR Code" id="userQRImg">
-        </div>
-
-        <!-- UTR फॉर्म -->
+        <!-- पेमेंट और QR कोड वाली पहली स्क्रीन -->
         <div id="paymentFormSection">
+            <h2>भुगतान करें (Payment)</h2>
+            <p style="font-size: 11px; color: #94a3b8; margin-top: 0;">QR कोड स्कैन करें और सही विवरण भरें।</p>
+
+            <div class="qr-box">
+                <img src="https://i.ibb.co/W474r907/qr-code.png" alt="QR Code">
+            </div>
+
             <form id="utrForm" action="https://script.google.com/macros/s/AKfycbwgnnCRiA775TL4MlaiTBrZZ3tIn9668-4_RaEeSxxsS_xrGVFzv6YtKmaEnrFC71RW-A/exec" method="POST" target="hidden_iframe" onsubmit="return handleFormSubmit()">
                 <input type="text" id="nameInput" name="playerName" placeholder="अपना पूरा नाम दर्ज करें" required>
                 <input type="text" id="utrInput" name="utr" placeholder="12 अंकों का UTR नंबर दर्ज करें" required>
@@ -95,37 +93,36 @@
         </div>
 
         <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
-
-        <!-- पेंडिंग / टाइमर स्क्रीन -->
-        <div id="timerSection">
-            <div id="infoMessage" class="msg" style="background: rgba(234, 179, 8, 0.2); color: #fde047;">कृपया एडमिन के अप्रूवल का इंतज़ार करें...</div>
-            <h3 id="countdownDisplay" style="color: #4ade80; font-size: 20px; margin: 10px 0; display: none;">--:--:--</h3>
-        </div>
     </div>
 
     <script>
-        // आपका नया और पक्का Google Apps Script Web App URL
         let scriptAPIURL = "https://script.google.com/macros/s/AKfycbwgnnCRiA775TL4MlaiTBrZZ3tIn9668-4_RaEeSxxsS_xrGVFzv6YtKmaEnrFC71RW-A/exec";
+        let secondScreenURL = "https://asharfiyasabriachar-eng.github.io/Coine-toss2/";
 
         window.onload = function() {
             let savedName = localStorage.getItem("mine_player_name");
             let savedExpiry = localStorage.getItem("mine_expiry_time");
 
+            // यदि पहले से 24 घंटे का टाइमर चल रहा है, तो चेक करो कि समय बचा है या खत्म हुआ
             if (savedExpiry) {
                 let timeLeft = parseInt(savedExpiry) - new Date().getTime();
                 if (timeLeft > 0) {
-                    startTimerWithExpiry(parseInt(savedExpiry));
+                    // अगर समय बचा है, तो सीधे दूसरी स्क्रीन पर भेज दो
+                    window.location.href = secondScreenURL;
                     return;
                 } else {
+                    // 24 घंटे पूरे हो चुके हैं, डेटा साफ़ करो ताकि वापस पेमेंट स्क्रीन दिखे
                     localStorage.removeItem("mine_player_name");
                     localStorage.removeItem("mine_expiry_time");
                 }
             }
 
+            // यदि नाम सेव है लेकिन अभी अप्रूव नहीं हुआ, तो स्टेटस चेक करना जारी रखो
             if (savedName) {
                 document.getElementById("nameInput").value = savedName;
+                showWaitingMessage("⏳ UTR जमा है, एडमिन के अप्रूवल का इंतज़ार है...");
                 checkUserStatus(savedName);
-                setInterval(() => checkUserStatus(savedName), 15000);
+                setInterval(() => checkUserStatus(savedName), 10000);
             }
         };
 
@@ -142,21 +139,21 @@
             }
 
             localStorage.setItem("mine_player_name", nameVal);
-            msgBox.style.color = "#4ade80";
-            msgBox.innerText = "UTR सफलतापूर्वक दर्ज हो गया!";
+            showWaitingMessage("✅ UTR जमा हो गया! अप्रूवल का इंतज़ार है...");
 
             setTimeout(() => {
-                switchToWaitingMode();
                 checkUserStatus(nameVal);
-                setInterval(() => checkUserStatus(nameVal), 15000);
+                setInterval(() => checkUserStatus(nameVal), 10000);
             }, 1000);
 
             return true;
         }
 
-        function switchToWaitingMode() {
-            document.getElementById("paymentFormSection").style.display = "none";
-            document.getElementById("timerSection").style.display = "block";
+        function showWaitingMessage(text) {
+            let msgBox = document.getElementById("statusMsg");
+            msgBox.style.color = "#facc15";
+            msgBox.style.background = "rgba(234, 179, 8, 0.1)";
+            msgBox.innerText = text;
         }
 
         function checkUserStatus(playerName) {
@@ -172,12 +169,13 @@
                 if (data && data.status === "Approved") {
                     let approvalTime = new Date(data.timestamp).getTime();
                     if (isNaN(approvalTime)) approvalTime = new Date().getTime();
-                    let expiryTime = approvalTime + (24 * 60 * 60 * 1000); 
                     
+                    // 24 घंटे का एक्सपायरी टाइम सेट करना
+                    let expiryTime = approvalTime + (24 * 60 * 60 * 1000);
                     localStorage.setItem("mine_expiry_time", expiryTime);
-                    startTimerWithExpiry(expiryTime);
-                } else if (data && data.status === "Pending") {
-                    switchToWaitingMode();
+                    
+                    // **यहाँ आपकी दूसरी स्क्रीन खुल जाएगी!**
+                    window.location.href = secondScreenURL;
                 }
                 delete window[cbName];
             };
@@ -186,34 +184,6 @@
             script.id = "dynamic_check_script";
             script.src = checkURL;
             document.body.appendChild(script);
-        }
-
-        function startTimerWithExpiry(expiryTime) {
-            document.getElementById("paymentFormSection").style.display = "none";
-            document.getElementById("timerSection").style.display = "block";
-            document.getElementById("countdownDisplay").style.display = "block";
-            document.getElementById("infoMessage").innerText = "✅ आपका पेमेंट अप्रूव हो गया है! टाइमर:";
-
-            let timerInterval = setInterval(() => {
-                let now = new Date().getTime();
-                let timeLeft = expiryTime - now;
-
-                if (timeLeft <= 0) {
-                    clearInterval(timerInterval);
-                    localStorage.removeItem("mine_player_name");
-                    localStorage.removeItem("mine_expiry_time");
-                    location.reload();
-                } else {
-                    let hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    let minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-                    let seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-
-                    document.getElementById("countdownDisplay").innerText = 
-                        hours.toString().padStart(2, '0') + ":" + 
-                        minutes.toString().padStart(2, '0') + ":" + 
-                        seconds.toString().padStart(2, '0');
-                }
-            }, 1000);
         }
     </script>
 </body>
